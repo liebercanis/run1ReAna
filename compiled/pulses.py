@@ -34,7 +34,7 @@ def main(args):
                 check = is_good(runs,i)
                 if( int(check) >0  ):
                     files.append(tag)
-                    print("\t  good run ", len(files), " check ", check, " tag " , tag )
+                    #print("\t  good run ", len(files), " check ", check, " tag " , tag )
 
 
 
@@ -47,12 +47,23 @@ def main(args):
 
 
     print(" all good runs",  len(runs) , " good files found ", len(files) )
+   
     n = len(files) 
     if (len(sys.argv) > 1):
         n = int(args[0])
 
+   
     #print(runs)
     print(" args ", args, " number of runs to run   ", n)
+
+    count =0
+    for i in files:
+        print(count) 
+        if count < n :
+            print(i)
+            count = count +1
+
+
 
 
     for i in range(0, n):
