@@ -156,7 +156,7 @@ namespace ROOT {
       vector<TPulse> *ptr = 0;
       static ::TVirtualIsAProxy* isa_proxy = new ::TIsAProxy(typeid(vector<TPulse>));
       static ::ROOT::TGenericClassInfo 
-         instance("vector<TPulse>", -2, "vector", 210,
+         instance("vector<TPulse>", -2, "vector", 469,
                   typeid(vector<TPulse>), ::ROOT::Internal::DefineBehavior(ptr, ptr),
                   &vectorlETPulsegR_Dictionary, isa_proxy, 4,
                   sizeof(vector<TPulse>) );
@@ -213,8 +213,8 @@ namespace {
     static const char* includePaths[] = {
 "/usr/local/root/include",
 "/.",
-"/home/admin/root-6.14.06/include",
-"/home/gold/bacon/pmtLocal/obj/",
+"/usr/local/root_v6.12.06/include",
+"/Users/gold/baconLocal/git/bacon/run1ReAna/obj/",
 0
     };
     static const char* fwdDeclCode = R"DICTFWDDCLS(
@@ -224,8 +224,8 @@ namespace {
 #pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
 extern int __Cling_Autoloading_Map;
 class __attribute__((annotate("$clingAutoload$TPulse.hxx")))  __attribute__((annotate("$clingAutoload$TBaconEvent.hxx")))  TPulse;
-namespace std{template <typename _Tp> class __attribute__((annotate("$clingAutoload$bits/allocator.h")))  __attribute__((annotate("$clingAutoload$string")))  allocator;
-}
+namespace std{inline namespace __1{template <class _Tp> class __attribute__((annotate("$clingAutoload$iosfwd")))  __attribute__((annotate("$clingAutoload$string")))  allocator;
+}}
 class __attribute__((annotate("$clingAutoload$TBaconEvent.hxx")))  TBaconEvent;
 )DICTFWDDCLS";
     static const char* payloadCode = R"DICTPAYLOAD(
@@ -248,7 +248,7 @@ nullptr};
     if (!isInitialized) {
       TROOT::RegisterModule("TBaconEvent_Dict",
         headers, includePaths, payloadCode, fwdDeclCode,
-        TriggerDictionaryInitialization_TBaconEvent_Dict_Impl, {}, classesHeaders, /*has no C++ module*/false);
+        TriggerDictionaryInitialization_TBaconEvent_Dict_Impl, {}, classesHeaders);
       isInitialized = true;
     }
   }
