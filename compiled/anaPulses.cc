@@ -82,6 +82,8 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
     nSamples = pmtEvent->time.size();
     if (ientry == 0)
       printf(" .... events %lld samples %i PMT0 %zu PMT1 %zu \n", pmtTree->GetEntries(), nSamples, pmtEvent->volt1.size(), pmtEvent->volt2.size());
+    if (ientry % 1000 == 0) cout << ".... " << ientry << " events" << endl;
+
     int gotPMT = 0;
     if (pmtEvent->volt1.size() > 0)
       ++gotPMT;
@@ -276,9 +278,7 @@ void anaPulses::anaEntry(Long64_t ientry)
     hSignal[j]->SetTitle(sTitle);
   }
 
-  if (ientry % 1000 == 0)
-    cout << "completed " << ientry << " events" << endl;
-
+  
   //###################//
   //End of Event Clean-Up//
   //###################//
