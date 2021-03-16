@@ -4,37 +4,56 @@ import os
 from subprocess import Popen, PIPE, call
 import pprint
 
+def is_good(frunlist,tag):
+    for r in frunlist:
+        if r in tag:
+            return True
+    return False 
 
 def main(args):
     """ run pulses """
     myEnv = os.environ.copy()
-    flist = open("run1GoodRuns.txt", "r")
+    frunlist = open("run1GoodRuns.txt", "r")
+    runs = []
+    for x in frunlist:
+        r = x[0:x.rindex("\n")]
+        runs.append(r)
+
     files = []
-    for x in flist:
-        tag = x[0:x.rindex("\n")]
-        files.append(tag)
+    p = os.listdir('rootData')
+    print(" number of files in rootData ",len(p))
+    for i in p:
+        if os.path.isfile('rootData/'+i):
+            #print(" file ", i)
+            if( i.endswith("root")  and not i.startswith("ana") ) :
+                tag = i[0:i.rindex(".")]
+                if(is_good):
+                    print("\n\t  good run file ", i," tag ",tag)
+                    files.append(tag)
 
 
 
     #print(myEnv)
     
-    n = len(files)
+    n = len(runs)
     if (n < 1):
-        print("\n no files found ")
+        print("\n no runs found ")
         return
 
 
-    print(" all good files",  len(files))
-    n = len(files) 
+    print(" all good runs",  len(runs))
+    n = len(runs) 
     if (len(sys.argv) > 1):
         n = int(args[0])
 
-    #print(files)
-    print(" args ", args, " number of files to run   ", n)
+    #print(runs)
+    print(" args ", args, " number of runs to run   ", n)
+
+    exit();
 
     for i in range(0, n):
-        print(" run job ", i, " tag ",files[i])
-        process = Popen(['pulses', files[i]], stdout=PIPE,stderr=PIPE, env=myEnv)
+        print(" run job ", i, " tag ",runs[i])
+        process = Popen(['pulses', runs[i]], stdout=PIPE,stderr=PIPE, env=myEnv)
         stdout, stderr = process.communicate()
         process.wait()
         print(stdout)
