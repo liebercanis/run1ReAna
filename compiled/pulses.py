@@ -27,7 +27,7 @@ def main(args):
             #print(" file ", i)
             if( i.endswith("root")  and not i.startswith("ana") ) :
                 tag = i[0:i.rindex(".")]
-                if(is_good):
+                if(is_good(frunlist,tag)):
                     print("\n\t  good run file ", i," tag ",tag)
                     files.append(tag)
 
@@ -42,7 +42,7 @@ def main(args):
 
 
     print(" all good runs",  len(runs) , " good files found ", len(files) )
-    n = len(runs) 
+    n = len(files) 
     if (len(sys.argv) > 1):
         n = int(args[0])
 
