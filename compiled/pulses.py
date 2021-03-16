@@ -5,9 +5,9 @@ from subprocess import Popen, PIPE, call
 import pprint
 
 def is_good(runs,tag):
-    print('looking for tag ', tag, ' of ', len(runs))
     for r in runs:
         if r in tag:
+            print(' tag ', tag, ' for ', r)
             return True
     return False 
 
