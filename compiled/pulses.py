@@ -54,7 +54,6 @@ def main(args):
     #print(runs)
     print(" args ", args, " number of runs to run   ", n)
 
-    exit();
 
     for i in range(0, n):
         print(" run job ", i, " tag ",runs[i])
