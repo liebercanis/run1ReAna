@@ -104,7 +104,8 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
         hname.Form("PMTRaw%i-Ev%lld-%s", ipmt, nentries, tag.Data());
         hPMTRaw[ipmt] = new TH1D(hname, hname, nSamples, pmtXLow, pmtXHigh);
         hname.Form("PMTSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
-        hPMTSum[ipmt] = new TH1D(hname, hname, nSamples, pmtXLow, pmtXHigh);
+        hPMTSum[ipmt] = new TH1D(hname, hname, 1500, pmtXLow, pmtXHigh);
+        
         hname.Form("PulseSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
         hPulseSum[ipmt] = new TH1D(hname, hname, nSamples, pmtXLow, pmtXHigh);
 
@@ -133,7 +134,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
   printf(" END RUN %s  %lld pulses %lld \n", tag.Data(), nentries, ntuplePulse->GetEntries());
   printf(" pulse norm %i \n",pulseShapeNorm[0]);
 
-  //outfile->ls();
+  outfile->ls();
   outfile->Write();
 }
 
