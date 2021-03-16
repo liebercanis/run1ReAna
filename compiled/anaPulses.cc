@@ -24,7 +24,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
   Long64_t nentries = pmtTree->GetEntries();
 
   // set up memory for reading
-  TPmtEvent *pmtEvent = new TPmtEvent();
+  pmtEvent = new TPmtEvent();
   Int_t iset = pmtTree->SetBranchAddress("pmtEvent", &pmtEvent);
   if (iset != 0)
   {
