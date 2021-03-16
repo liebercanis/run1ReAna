@@ -51,9 +51,9 @@ pulses: pulses.cc  anaPulses.cc anaPulses.hh
 .PHONY : clean show
 
 clean:
-	rm -f *.o convertRaw 
-	rm -rf convertRaw.dSYM
-	rm -rf ana.dSYM
+	rm -f *.o  
+	rm -rf sum 
+	rm -rf pulses 
 show:
 	@echo LOCAL = $(LOCAL)
 	@echo OBJ = $(OBJ)
