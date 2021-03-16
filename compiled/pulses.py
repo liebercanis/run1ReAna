@@ -8,26 +8,24 @@ import pprint
 def main(args):
     """ run pulses """
     myEnv = os.environ.copy()
-    #print(myEnv)
+    flist = open("run1GoodRuns.txt", "r")
     files = []
-    p = os.listdir('rootData/DS2')
-    print(" number of files in rootData ",len(p))
-    for i in p:
-        if os.path.isfile('rootData/DS2/'+i):
-            #print(" file ", i)
-            if( i.endswith("root")  and i.startswith("RecirculateRun") ) :
-                tag = i[0:i.rindex(".")]
-                files.append(tag)
-                #print("\n\t data root file ", i," tag ",tag)
+    for x in flist:
+        tag = x[0:x.rindex("\n")]
+        files.append(tag)
 
 
+
+    #print(myEnv)
+    
     n = len(files)
     if (n < 1):
         print("\n no files found ")
         return
 
 
-    print(" all files  ", len(p), " will run  ", len(files))
+    print(" all good files",  len(files))
+    n = len(files) 
     if (len(sys.argv) > 1):
         n = int(args[0])
 
