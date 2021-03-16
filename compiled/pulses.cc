@@ -11,9 +11,9 @@ int main(int argc, char *argv[])
   if (argc > 2)
     nevents = atoi(argv[2]);
 
-  cout << argv[1] << endl;
   TString tag(argv[1]);
 
+  printf(" running %s nev %i \n",tag.Data(),nevents); 
   new anaPulses(tag, nevents);
   exit(0);
 }
