@@ -66,8 +66,8 @@ def main(args):
 
 
     for i in range(0, n):
-        print(" run job ", i, " tag ",runs[i])
-        process = Popen(['pulses', runs[i]], stdout=PIPE,stderr=PIPE, env=myEnv)
+        print(" run job ", i, " tag ",files[i])
+        process = Popen(['pulses', files[i]], stdout=PIPE,stderr=PIPE, env=myEnv)
         stdout, stderr = process.communicate()
         process.wait()
         print(stdout)
