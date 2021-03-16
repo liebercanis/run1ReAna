@@ -286,7 +286,7 @@ void anaPulses::anaEntry(Long64_t ientry)
       bool doPulse = true;
       int pmtNum=j;
       int ndigi = signal[j].size();
-      if(pulseMax<3000000) doPulse=false;
+      if(pulseMax<3000) doPulse=false;
       if(doPulse) {
         int startPulse = TMath::Max(0,pulseMax-1000);
         int endPulse  = TMath::Min(int(ndigi),pulseMax+500);
