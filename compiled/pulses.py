@@ -4,8 +4,9 @@ import os
 from subprocess import Popen, PIPE, call
 import pprint
 
-def is_good(frunlist,tag):
-    for r in frunlist:
+def is_good(runs,tag):
+    print('looking for tag ', tag, ' of ', len(runs))
+    for r in runs:
         if r in tag:
             return True
     return False 
@@ -27,7 +28,7 @@ def main(args):
             #print(" file ", i)
             if( i.endswith("root")  and not i.startswith("ana") ) :
                 tag = i[0:i.rindex(".")]
-                if(is_good(frunlist,tag)):
+                if(is_good(runs,tag)):
                     print("\n\t  good run file ", i," tag ",tag)
                     files.append(tag)
 
