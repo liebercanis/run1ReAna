@@ -286,7 +286,7 @@ void anaPulses::anaEntry(Long64_t ientry)
       bool doPulse = true;
       int pmtNum=j;
       int ndigi = signal[j].size();
-      if(vMaxTime<3.0E-6) doPulse=false;
+      if(vMaxTime<4.0E-6) doPulse=false;
       if(doPulse) {
         printf("XXX vMaxTime %E \n",vMaxTime);
         int startPulse = TMath::Max(0,pulseMax-1000);
