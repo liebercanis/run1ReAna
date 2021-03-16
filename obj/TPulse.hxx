@@ -1,0 +1,35 @@
+/**
+** MG, March 2020 
+**/
+#ifndef TPULSE_DEFINED
+#define TPULSE_DEFINED
+#include <iostream>
+#include <string>
+#include <TNamed.h>
+#include <vector>
+
+using namespace std;
+
+// class to store pmt hit 
+
+class TPulse: public TNamed {
+  public:
+    TPulse();
+    ~TPulse(){;}
+
+    void clear();
+    // data elements
+    //  int nev;
+    int istart;
+    int nwidth;
+    int good;
+    int kind;
+    float time;
+    float thit;
+    float q;
+    float qerr;
+
+    ClassDef(TPulse,7)
+};
+#endif
+
