@@ -6,8 +6,10 @@ import pprint
 
 def is_good(runs,tag):
     for r in runs:
-        if r in tag:
-            print(' tag ', tag, ' for ', r)
+        c = r + '.root'
+        #print(" look for ",c," in ", tag)
+        if c in tag:
+            #print(' tag ', tag, ' for ', r)
             return r 
     return 0
 
@@ -25,10 +27,10 @@ def main(args):
     print(" number of files in rootData ",len(p))
     for i in p:
         if os.path.isfile('rootData/'+i):
-            #print(" file ", i)
+            print(" file ", i)
             if( i.endswith("root")  and not i.startswith("ana") ) :
                 tag = i[0:i.rindex(".")]
-                check = is_good(runs,tag)
+                check = is_good(runs,i)
                 if( int(check) > 0):
                     print("\t  good run ", check, ", tag " , tag )
                     files.append(tag)
