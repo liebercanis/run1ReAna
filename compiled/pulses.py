@@ -29,7 +29,7 @@ def main(args):
             if( i.endswith("root")  and not i.startswith("ana") ) :
                 tag = i[0:i.rindex(".")]
                 if(is_good(runs,tag)):
-                    print("\n\t  good run file ", i," tag ",tag)
+                    print("\t  good run file ", i," tag ",tag)
                     files.append(tag)
 
 
