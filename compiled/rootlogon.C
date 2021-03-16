@@ -9,6 +9,6 @@
   cout << "LINKED LIBS "  << gSystem->GetLinkedLibs() << endl;
   gROOT->LoadMacro("util.C");
   int iload = gSystem->Load("obj/librun1ReAnaRoot.so");
-  printf(" loaded libBaconRoot = %i zero is success! \n",iload);
+  printf(" loaded lib obj/librun1ReAnaRoot.so  = %i zero is success! \n",iload);
 }
 
