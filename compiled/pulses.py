@@ -8,8 +8,8 @@ def is_good(runs,tag):
     for r in runs:
         if r in tag:
             print(' tag ', tag, ' for ', r)
-            return True
-    return False 
+            return r 
+    return 0
 
 def main(args):
     """ run pulses """
@@ -28,8 +28,9 @@ def main(args):
             #print(" file ", i)
             if( i.endswith("root")  and not i.startswith("ana") ) :
                 tag = i[0:i.rindex(".")]
-                if(is_good(runs,tag)):
-                    print("\t  good run file ", i," tag ",tag)
+                check = is_good(runs,tag)
+                if( int(check) > 0):
+                    print("\t  good run ", check, ", tag " , tag )
                     files.append(tag)
 
 
