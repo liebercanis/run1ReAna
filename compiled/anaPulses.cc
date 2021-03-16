@@ -279,14 +279,14 @@ void anaPulses::anaEntry(Long64_t ientry)
         }
         hPeakFinding[j]->SetBinContent(k, 0);
       }
-      cout<<"\t Start/stop "<<startTime<<"/"<<stopTime<<", width "<<peakWidth<<", pulseMax" << pulseMax << ", vMax "<<vMax<<", charge "<<-1e9*deltaT*charge<<endl;
+      cout<<"\t Start/stop "<<startTime<<"/"<<stopTime<<", width "<<peakWidth<<", pulseMax " << pulseMax << ", vMax "<<vMax<<", charge "<<-1e9*deltaT*charge<<endl;
       ntuplePulse->Fill(irun, ientry, j, peakTime[j].size() / 2, -charge * deltaT, startTime, peakWidth, T0, -vMax, vMaxTime, Sdev, baseline);
       sTitle += TString("Charge_") + to_string(-1e9 * deltaT * charge) + TString("_start/stop_") + to_string(1.e6 * startTime) + TString("/") + to_string(1.e6 * stopTime) + TString("_vMax_") + to_string(vMax) + TString("_");
       /* summed pulse **/
       bool doPulse = true;
       int pmtNum=j;
       int ndigi = signal[j].size();
-      if(pulseMax<3.0E-6) doPulse=false;
+      if(pulseMax<3000000) doPulse=false;
       if(doPulse) {
         int startPulse = TMath::Max(0,pulseMax-1000);
         int endPulse  = TMath::Min(int(ndigi),pulseMax+500);
