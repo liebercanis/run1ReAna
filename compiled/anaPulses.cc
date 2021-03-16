@@ -107,6 +107,10 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
         hname.Form("PulseSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
         hPulseSum[ipmt] = new TH1D(hname, hname, nSamples, pmtXLow, pmtXHigh);
 
+        hname.Form("Sum_pmt%i",ipmt);
+        hSum[ipmt] = new TH1D(hname,hname,nSamples, pmtEvent->time[ipmt], pmtEvent->time[NEvents - 1]);
+        hname.Form("SumBaseline_pmt%i",ipmt);
+        hSumBaseline[ipmt] = new TH1D(hname,hname, NEvents, pmtEvent->time[ipmt], pmtEvent->time[NEvents - 1]);
       }
     }
 
@@ -140,13 +144,6 @@ void anaPulses::anaEntry(Long64_t ientry)
   NEvents = pmtEvent->time.size();
   Double_t deltaT = (pmtEvent->time[NEvents - 1] - pmtEvent->time[0]) / (NEvents - 1);
 
-  if (ientry == 0)
-  {
-    hSum[0] = new TH1D("Sum_pmt0", "sum_pmt0", NEvents, pmtEvent->time[0], pmtEvent->time[NEvents - 1]);
-    //hSum[1] = new TH1D("Sum_pmt1","sum_pmt1",NEvents,pmtEvent->time[0],pmtEvent->time[NEvents-1]);
-    hSumBaseline[0] = new TH1D("SumBaseline_pmt0", "sum_pmt0", NEvents, pmtEvent->time[0], pmtEvent->time[NEvents - 1]);
-    //hSumBaseline[1] = new TH1D("SumBaseline_pmt1","sum_pmt1",NEvents,pmtEvent->time[0],pmtEvent->time[NEvents-1]);
-  }
   signal[0] = pmtEvent->volt1;
   //signal[1] = pmtEvent->volt2;
   //TF1 * fPoly[signal.size()];
