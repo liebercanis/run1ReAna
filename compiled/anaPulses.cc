@@ -121,7 +121,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
   }
   printf(" END RUN %s  %lld pulses %lld \n", tag.Data(), nentries, ntuplePulse->GetEntries());
 
-  outfile->ls();
+  //outfile->ls();
   outfile->Write();
 }
 
