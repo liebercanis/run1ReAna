@@ -95,6 +95,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
     Double_t pmtXLow = pmtEvent->time[0] * microSec;
     Double_t pmtXHigh = pmtEvent->time[nSamples - 1] * microSec;
     // define histos
+    outfile->cd();
     if (ientry == 0)
     {
       for (int ipmt = 0; ipmt < gotPMT; ++ipmt)
@@ -112,6 +113,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
         hname.Form("SumBaseline_pmt%i",ipmt);
         hSumBaseline[ipmt] = new TH1D(hname,hname, NEvents, pmtEvent->time[ipmt], pmtEvent->time[NEvents - 1]);
       }
+      outfile->ls();
     }
 
     // zero histos
