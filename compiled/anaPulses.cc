@@ -287,7 +287,6 @@ void anaPulses::anaEntry(Long64_t ientry)
       int ndigi = signal[j].size();
       if(vMaxTime<4.0E-6) doPulse=false;
       if(doPulse) {
-        printf("XXX vMaxTime %E \n",vMaxTime);
         int startPulse = TMath::Max(0,pulseMax-1000);
         int endPulse  = TMath::Min(int(ndigi),pulseMax+500);
         ++pulseShapeNorm[j];
