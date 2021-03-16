@@ -5,6 +5,37 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
 {
   printf(" starting anaPulses tag %s \n", tag.Data());
 
+
+    
+  /* ntuplePulse structure  
+  Float_t         ientry;
+  Float_t         pmtNum;
+  Float_t         nhits;
+  Float_t         charge;
+  Float_t         startTime;
+  Float_t         peakWidth;
+  Float_t         T0;
+  Float_t         vMax;
+  Float_t         vMaxTime;
+  Float_t         Sdev;
+  Float_t         baseline;
+  tPulse = new TTree("ntuplePulse","ntuplePulse");
+  tPulse->Branch("ientry", &ientry);
+  tPulse->Branch("pmtNum", &pmtNum);
+  tPulse->Branch("nhits", &nhits);
+  tPulse->Branch("charge", &charge);
+  tPulse->Branch("startTime", &startTime);
+  tPulse->Branch("peakWidth", &peakWidth);
+  tPulse->Branch("T0", &T0);
+  tPulse->Branch("vMax", &vMax);
+  tPulse->Branch("vMaxTime", &vMaxTime);
+  tPulse->Branch("Sdev", &Sdev);
+  tPulse->Branch("baseline", &baseline);
+
+  tPulse->GetListOfBranches()->ls();
+   */
+
+
   // open ouput file and make some histograms
 
   TString fileName;
@@ -86,7 +117,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
     /* do analysis here */
     anaEntry(ientry);
   }
-  printf(" END RUN %s  %lld of %lld \n", tag.Data(), nentries, pmtTree->GetEntries());
+  printf(" END RUN %s  %lld pulses %lld \n", tag.Data(), nentries, ntuplePulse->GetEntries());
 
   outfile->ls();
   outfile->Write();

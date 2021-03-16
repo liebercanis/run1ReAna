@@ -24,6 +24,9 @@
 #include <math.h>
 //
 #include "TPmtEvent.hxx"
+#include "TBaconEvent.hxx"
+//#include "TBaconRun.hxx"
+ 
 
 class anaPulses
 {
@@ -36,6 +39,9 @@ public:
   };
   TTree *pmtTree;
   TPmtEvent *pmtEvent;
+  TTree *tbTree;
+  TTree *tPulse;
+
   void anaEntry(Long64_t ientry);
   std::vector<Double_t> Derivative(std::vector<Double_t>, Int_t NSteps);
   std::vector<Int_t> PeakFinding(std::vector<Double_t>, std::vector<Double_t>, Int_t pmtNum, Int_t entry);
@@ -54,8 +60,10 @@ public:
   Int_t nSamples;
   Int_t NEvents;
   Int_t NHistograms = 1000;
-  double microSec = 1.0E6;
   Int_t irun = 1;
+  double microSec = 1.0E6;
+  double meanSPE  = 4.60e-11;
+  double sigmaSPE = 1.5e-11;
 
   Double_t minPeakWidth = 2.5e-9;
   Double_t maxPeakWidth = 100e-9;
