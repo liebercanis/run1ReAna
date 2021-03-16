@@ -58,7 +58,6 @@ def main(args):
 
     count =0
     for i in files:
-        print(count) 
         if count < n :
             print(i)
             count = count +1
