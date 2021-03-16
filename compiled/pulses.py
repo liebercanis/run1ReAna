@@ -41,7 +41,7 @@ def main(args):
         return
 
 
-    print(" all good runs",  len(runs))
+    print(" all good runs",  len(runs) , " good files found ", len(files) )
     n = len(runs) 
     if (len(sys.argv) > 1):
         n = int(args[0])
