@@ -16,7 +16,7 @@ LOCAL        := $(shell pwd)
 ROOTCFLAGS   := $(shell root-config --cflags)
 ROOTLIBS     := $(shell root-config --libs)
 ROOTGLIBS    := $(shell root-config --glibs)
-OBJ=$(HOME)/bacon/pmtLocal/obj
+OBJ=$(HOME)/bacon/run1ReAna/obj
 # Linux with egcs, gcc 2.9x, gcc 3.x (>= RedHat 5.2)
 CXX           = g++ -ggdb 
 ## -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
@@ -35,9 +35,9 @@ CPP= $(CXX) $(CXXFLAGS) $(INC_PATH)
 
 
 CC+=-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
-CPP+=-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
+CPP+=-D_LARGEFILE_SOnURCE -D_FILE_OFFSET_BITS=64
 
-LIBS+=  -L$(FFTW)/lib -lfftw3 $(ROOTLIBS) -L$(OBJ) -lBaconRoot
+LIBS+=  -L$(FFTW)/lib -lfftw3 $(ROOTLIBS) -L$(OBJ) -lrun1ReAnaRoot
 
 all: sum pulses
 
