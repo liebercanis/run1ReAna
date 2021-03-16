@@ -70,8 +70,10 @@ public:
   std::vector<std::vector<Double_t>> signal;
   std::vector<std::vector<Double_t>> derivative;
   std::vector<std::vector<Double_t>> integral;
+  int pulseShapeNorm[NPMT];
 
   // summed wave histograms
+  TH1D *hPulseSum[NPMT];
   TH1D *hPMTRaw[NPMT];
   TH1D *hPMTSum[NPMT];
   TH1D *hSignal[2];

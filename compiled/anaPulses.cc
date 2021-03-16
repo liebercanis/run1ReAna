@@ -5,6 +5,8 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
 {
   printf(" starting anaPulses tag %s \n", tag.Data());
 
+  for(int num=0; num<NPMT; ++num) pulseShapeNorm[num]=0;
+
 
     
   /* ntuplePulse structure  
@@ -102,6 +104,9 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
         hPMTRaw[ipmt] = new TH1D(hname, hname, nSamples, pmtXLow, pmtXHigh);
         hname.Form("PMTSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
         hPMTSum[ipmt] = new TH1D(hname, hname, nSamples, pmtXLow, pmtXHigh);
+        hname.Form("PulseSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
+        hPulseSum[ipmt] = new TH1D(hname, hname, nSamples, pmtXLow, pmtXHigh);
+
       }
     }
 
@@ -120,6 +125,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
     anaEntry(ientry);
   }
   printf(" END RUN %s  %lld pulses %lld \n", tag.Data(), nentries, ntuplePulse->GetEntries());
+  printf(" pulse norm %i \n",pulseShapeNorm[0]);
 
   //outfile->ls();
   outfile->Write();
@@ -181,7 +187,7 @@ void anaPulses::anaEntry(Long64_t ientry)
     fBaseSag[j]->SetParameter(1, 3e-6);
     //rezero sum after baseline
     sum = 0;
-    Double_t sigMin = hSignal[j]->GetMinimum();
+    //Double_t sigMin = hSignal[j]->GetMinimum();
     Int_t sigMinBin = hSignal[j]->GetMinimumBin(); //FindBin(sigMin);
     for (int i = 0; i < signal[j].size(); i++)
     {
@@ -251,6 +257,7 @@ void anaPulses::anaEntry(Long64_t ientry)
     for (int i = 0; i < peakTime[j].size() - 1; i += 2)
     {
       Double_t vMax = 0, charge = 0, vMaxTime = 0, startTime, stopTime, peakWidth;
+      int pulseMax=0;
       Int_t startBin = peakTime[j][i], stopBin = peakTime[j][i + 1];
       //Int_t startBin = hSignal[j]->FindBin(400e-9);
       //Int_t stopBin  = hSignal[j]->FindBin(500e-9);
@@ -267,18 +274,36 @@ void anaPulses::anaEntry(Long64_t ientry)
         if (std::fabs(signal[j][k]) > std::fabs(vMax))
         {
           vMax = signal[j][k];
+          pulseMax = k;
           vMaxTime = pmtEvent->time[k];
         }
         hPeakFinding[j]->SetBinContent(k, 0);
       }
-      //cout<<"\t Start/stop "<<startTime<<"/"<<stopTime<<", width "<<peakWidth<<", vMax "<<vMax<<", charge "<<-1e9*deltaT*charge<<endl;
+      cout<<"\t Start/stop "<<startTime<<"/"<<stopTime<<", width "<<peakWidth<<", pulseMax" << pulseMax << ", vMax "<<vMax<<", charge "<<-1e9*deltaT*charge<<endl;
       ntuplePulse->Fill(irun, ientry, j, peakTime[j].size() / 2, -charge * deltaT, startTime, peakWidth, T0, -vMax, vMaxTime, Sdev, baseline);
       sTitle += TString("Charge_") + to_string(-1e9 * deltaT * charge) + TString("_start/stop_") + to_string(1.e6 * startTime) + TString("/") + to_string(1.e6 * stopTime) + TString("_vMax_") + to_string(vMax) + TString("_");
+      /* summed pulse **/
+      bool doPulse = true;
+      int pmtNum=j;
+      int ndigi = signal[j].size();
+      if(pulseMax<3.0E-6) doPulse=false;
+      if(doPulse) {
+        int startPulse = TMath::Max(0,pulseMax-1000);
+        int endPulse  = TMath::Min(int(ndigi),pulseMax+500);
+        ++pulseShapeNorm[j];
+        for (int ibin=startPulse; ibin <= endPulse; ++ibin) {
+          int pbin = ibin+1-pulseMax+1000;
+          double val = signal[j][ibin];
+          hPulseSum[pmtNum]->SetBinContent(pbin,hPulseSum[pmtNum]->GetBinContent(pbin)+val);
+        }
+      }
+
     }
     hSignal[j]->SetTitle(sTitle);
+
   }
 
-  
+
   //###################//
   //End of Event Clean-Up//
   //###################//
