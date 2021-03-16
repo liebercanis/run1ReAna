@@ -104,7 +104,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
         hname.Form("PMTRaw%i-Ev%lld-%s", ipmt, nentries, tag.Data());
         hPMTRaw[ipmt] = new TH1D(hname, hname, nSamples, pmtXLow, pmtXHigh);
         hname.Form("PMTSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
-        hPMTSum[ipmt] = new TH1D(hname, hname, 1500, pmtXLow, pmtXHigh);
+        hPMTSum[ipmt] = new TH1D(hname, hname, 1500,0,1.5);
         
         hname.Form("PulseSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
         hPulseSum[ipmt] = new TH1D(hname, hname, nSamples, pmtXLow, pmtXHigh);
