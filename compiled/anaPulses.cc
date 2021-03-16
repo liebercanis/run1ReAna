@@ -1,4 +1,4 @@
-//#include "anaPulses.hh"
+#include "anaPulses.hh"
 //
 
 anaPulses::anaPulses(TString tag, Int_t maxEvents)
