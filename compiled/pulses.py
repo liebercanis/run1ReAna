@@ -22,6 +22,7 @@ def main(args):
         r = x[0:x.rindex("\n")]
         runs.append(r)
 
+    #print(runs)
     files = []
     p = os.listdir('rootData')
     print(" number of files in rootData ",len(p))
@@ -31,7 +32,7 @@ def main(args):
             if( i.endswith("root")  and not i.startswith("ana") ) :
                 tag = i[0:i.rindex(".")]
                 check = is_good(runs,i)
-                if( int(check) > 0):
+                if( int(check) >0  ):
                     files.append(tag)
                     print("\t  good run ", len(files), " check ", check, " tag " , tag )
 
