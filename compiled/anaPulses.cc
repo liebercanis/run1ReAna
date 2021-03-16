@@ -48,6 +48,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
   for (Long64_t ientry = 0; ientry < nentries; ientry++)
   {
     pmtTree->GetEntry(ientry);
+    nSamples = pmtEvent->time.size();
     if (ientry == 0)
       printf(" .... events %lld samples %i PMT0 %zu PMT1 %zu \n", pmtTree->GetEntries(), nSamples, pmtEvent->volt1.size(), pmtEvent->volt2.size());
     int gotPMT = 0;
