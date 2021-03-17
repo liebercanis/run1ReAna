@@ -21,11 +21,12 @@ class TPulse: public TNamed {
     // data elements
     //  int nev;
     int istart;
-    int nwidth;
     int good;
     int kind;
     float time;
-    float thit;
+    float tpeak;
+    float peak;
+    float pwidth;
     float q;
     float qerr;
 

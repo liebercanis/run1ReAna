@@ -10,13 +10,15 @@ TPulse::TPulse(): TNamed("TPulse","TPulse")
 
 void TPulse::clear()
 {
-    istart=0;
-    nwidth=0;
-    good=-1;
-    kind=-1;
-    time=0;
-    thit=0;
-    q=0;
-    qerr=0;
+  istart=0;
+  good=0;
+  kind=0;
+  time=0;
+  tpeak=0;
+  peak=0;
+  pwidth=0;
+  q;
+  qerr;
+    
 }
 
