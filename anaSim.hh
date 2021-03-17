@@ -1,4 +1,3 @@
-#include <sstream>
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
@@ -22,34 +21,20 @@
 #include <algorithm> // std::sort
 #include "TSpectrum.h"
 #include <math.h>
+#include <TDatime.h>
+#include "TRandom2.h"
+
 //
 #include "TPmtEvent.hxx"
+#include "TPmtSimulation.hxx"
 #include "TPmtRun.hxx"
-#include "TBaconEvent.hxx"
-//#include "TBaconRun.hxx"
 
-class anaPulses
+class anaSim
 {
 public:
-  anaPulses(TString tag, Int_t maxEvents);
-  virtual ~anaPulses() { ; }
-  enum
-  {
-    NPMT = 2
-  };
-  TTree *pmtTree;
-  TTree *tbTree;
-  TBaconEvent *bEvent;
-  //TPmtSimulation *simEvent;
-  TPmtEvent *pmtEvent;
-  TPmtEvent *processedEvent;
-  TPmtRun *pmtRun;
-  TNtuple *ntupleEvent;
-  TNtuple *ntuplePulse;
-
-  TTree *processedTree;
-
-  void anaEntry(Long64_t ientry);
+  anaSim(Int_t irun, Int_t nDer, Int_t dsNum);
+  anaSim();
+  ~anaSim() { ; };
 
   std::vector<Double_t> DownSampler(std::vector<Double_t>, Int_t NSteps);
   std::vector<Double_t> Derivative(std::vector<Double_t>, Int_t NSteps);
@@ -69,18 +54,19 @@ public:
   std::vector<Double_t> TrapFilter(std::vector<Double_t> sig, Int_t ramp, Int_t flat, Int_t pmtNum, Int_t ientry);
   std::vector<Double_t> LowPassFrequency(std::vector<Double_t> input, Double_t cutoff, Double_t sampleRate);
   std::vector<Double_t> NotchFilter(std::vector<Double_t> input, Double_t notch, Double_t BW, Double_t sampleRate);
+  TPmtSimulation *simEvent;
+  TPmtEvent *pmtEvent;
+  TPmtEvent *processedEvent;
+  TPmtRun *pmtRun;
 
   Int_t NEvents;
-  Int_t nSamples;
   Int_t NHistograms = 100;
   Double_t pi = 3.14159265359;
   Double_t deltaT = 0;
-  double microSec = 1.0E6;
-  Int_t nDer = 7;
   bool peakFindingDebug = false;
+
   Double_t minPeakWidth = 3e-9;
   Double_t maxPeakWidth = 5000e-9;
-
   std::vector<std::vector<Double_t>> signal;
   std::vector<std::vector<Double_t>> derivative;
   std::vector<std::vector<Double_t>> integral;
@@ -88,18 +74,12 @@ public:
   TH1D *hSignal[2];
   TH1D *hDerivative[2];
   TH1D *hBaseline[2];
+  TH1D *hWindowSum[2];
+  TH1D *hSumWaveform[2];
   TH1D *hSum[2];
   TH1D *hSumFresh[2];
   TH1D *hSumBaseline[2];
   TH1D *hIntegral[2];
   TH1D *hFlatBaseline[2];
   TH1D *hRawSig[2];
-  TH1D *hWindowSum[2];
-  TH1D *hSumWaveform[2];
-
-  // summed wave histograms
-  TH1D *hPMTRaw[NPMT];
-  TH1D *hPMTSum[NPMT];
-  TH1D *hPulseSum[NPMT];
-  Int_t pulseShapeNorm[NPMT];
 };
