@@ -1,4 +1,4 @@
-# makefile for captRoot libcaptRoot.so 
+# makefile for run1ReAna 
 # MGold, Jan 2016
 # not yet ported to OSX!
 ########################################################
@@ -12,14 +12,16 @@ LOCAL        := $(shell pwd)
 ROOTCFLAGS   := $(shell root-config --cflags)
 ROOTLIBS     := $(shell root-config --libs)
 ROOTGLIBS    := $(shell root-config --glibs)
+FREE 				 := $(shell freetype-config --libs)
 
 CXXFLAGS     :=  $(ROOTCFLAGS) -I$(LOCAL) 
 LIBS         :=  $(ROOTGLIBS) $(CINTFLAGS)
 
 
-ifeq ($(ARCH),macosx)
+ifeq ($(ARCH),macosx64)
 				LIBRARY := lib$(LIBNAME).$(DllSuf)
 				LIBLINK := $(subst .$(DllSuf),.so,$(LIBRARY))
+				LIBS += $(FREE) 
 else
 				LIBRARY := lib$(LIBNAME).so
 				LIBLINK :=
