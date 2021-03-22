@@ -46,10 +46,10 @@ public:
   TPmtRun *pmtRun;
   TNtuple *ntupleEvent;
   TNtuple *ntuplePulse;
-
   TTree *processedTree;
 
   void anaEntry(Long64_t ientry);
+  void fillBaconEvent(Long64_t ientry);
 
   std::vector<Double_t> DownSampler(std::vector<Double_t>, Int_t NSteps);
   std::vector<Double_t> Derivative(std::vector<Double_t>, Int_t NSteps);
@@ -70,12 +70,18 @@ public:
   std::vector<Double_t> LowPassFrequency(std::vector<Double_t> input, Double_t cutoff, Double_t sampleRate);
   std::vector<Double_t> NotchFilter(std::vector<Double_t> input, Double_t notch, Double_t BW, Double_t sampleRate);
 
+  TString theTag;
   Int_t NEvents;
   Int_t nSamples;
   Int_t NHistograms = 100;
   Double_t pi = 3.14159265359;
   Double_t deltaT = 0;
   double microSec = 1.0E6;
+  TFile *outfile;
+  TDirectory *pDir;
+  /*nDer from 
+     Pulse processing routines for neutron time-of-flight data P.Žugec et al
+  */
   Int_t nDer = 7;
   bool peakFindingDebug = false;
   Double_t minPeakWidth = 3e-9;
@@ -101,5 +107,7 @@ public:
   TH1D *hPMTRaw[NPMT];
   TH1D *hPMTSum[NPMT];
   TH1D *hPulseSum[NPMT];
+  TH1D *hPulseOne;
+  TH1D *hPulseCharge;
   Int_t pulseShapeNorm[NPMT];
 };

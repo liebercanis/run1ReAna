@@ -4,6 +4,7 @@
 anaPulses::anaPulses(TString tag, Int_t maxEvents)
 {
   printf(" starting anaPulses tag %s \n", tag.Data());
+  theTag = tag;
 
   for (int num = 0; num < NPMT; ++num)
     pulseShapeNorm[num] = 0;
@@ -38,7 +39,8 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
   TString outfileName;
   outfileName.Form("run1RootData/anaPulses_%s_%i.root", tag.Data(), maxEvents);
   printf(" opening output file %s \n", outfileName.Data());
-  TFile *outfile = new TFile(outfileName, "recreate");
+  outfile = new TFile(outfileName, "recreate");
+  pDir = outfile->mkdir("pulseHist");
   outfile->cd();
   tbTree = new TTree("TBacon", "TBacon data");
   bEvent = new TBaconEvent();
@@ -58,6 +60,11 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
   pmtRun = new TPmtRun();
   processedTree->Branch("pmtRun", &pmtRun);
 
+  hPulseCharge = new TH1D("PulseCharge", "PulseOne", 1000, 0, 100);
+  pDir->cd();
+  hPulseOne = new TH1D("PulseOne", "PulseOne", 400, 0, 400);
+  outfile->cd();
+
   // set up memory for reading
   cout << "Event branch set" << endl;
   /** ***/
@@ -72,8 +79,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
     bEvent->clear();
     pmtTree->GetEntry(ientry);
     nSamples = pmtEvent->time.size();
-    bEvent->run = 1;
-    bEvent->event = ientry;
+
     if (ientry == 0)
       printf(" .... events %lld samples %i PMT0 %zu PMT1 %zu \n", pmtTree->GetEntries(), nSamples, pmtEvent->volt1.size(), pmtEvent->volt2.size());
     if (ientry % 100 == 0)
@@ -89,7 +95,6 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
     Double_t pmtXHigh = pmtEvent->time[nSamples - 1] * microSec;
     NEvents = pmtEvent->time.size();
     // define histos
-    outfile->cd();
     if (ientry == 0)
     {
       for (int ipmt = 0; ipmt < gotPMT; ++ipmt)
@@ -100,7 +105,8 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
         hname.Form("PMTSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
         hPMTSum[ipmt] = new TH1D(hname, hname, nSamples, 0, nSamples);
         hname.Form("PulseSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
-        hPulseSum[ipmt] = new TH1D(hname, hname, nSamples, 0, nSamples);
+        hPulseSum[ipmt] = (TH1D *)hPulseOne->Clone(hname);
+        //hPulseSum[ipmt] = new TH1D(hname, hname, 1500, 0, 1500);
         hname.Form("Sum_pmt%i", ipmt);
         hSum[ipmt] = new TH1D(hname, hname, nSamples, pmtEvent->time[ipmt], pmtEvent->time[NEvents - 1]);
         hname.Form("SumBaseline_pmt%i", ipmt);
@@ -122,22 +128,151 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
     }
     /* do analysis here */
     anaEntry(ientry);
-    tbTree->Fill();
+    fillBaconEvent(ientry);
   }
   printf(" END RUN %s  %lld pulses %lld \n", tag.Data(), nentries, ntuplePulse->GetEntries());
   printf(" pulse norm %i \n", pulseShapeNorm[0]);
 
-  outfile->ls();
+  //outfile->ls();
+  delete hPulseOne;
+  // normalize
+  TH1D *hres = hPulseSum[0];
+  if (pulseShapeNorm[0])
+  {
+    for (int ibin = 0; ibin < hres->GetNbinsX(); ++ibin)
+      hres->SetBinContent(ibin, hres->GetBinContent(ibin) / double(pulseShapeNorm[0]));
+  }
   outfile->Write();
 }
 
+void anaPulses::fillBaconEvent(Long64_t ientry)
+{
+  Int_t jpmt = 0;
+  bEvent->clear();
+  bEvent->event = ientry;
+  bEvent->run = atoi(theTag(theTag.Last('_') + 1, theTag.Length() - theTag.Last('_')).Data());
+  bEvent->npmt = 1;
+  bEvent->totQ = pmtRun->totalCharge[jpmt];
+  bEvent->T0 = pmtRun->T0[jpmt];
+  bEvent->totalCharge = pmtRun->totalCharge[jpmt];
+  bEvent->tMax = pmtRun->tMax[jpmt];
+  bEvent->vMax = pmtRun->vMax[jpmt];
+  bEvent->cMax = pmtRun->cMax[jpmt];
+  bEvent->baseline = pmtRun->baseline[jpmt];
+  bEvent->sDev = pmtRun->sDev[jpmt];
+  Int_t nPulses = pmtRun->charge[jpmt].size();
+  bEvent->npulse = nPulses;
+  bEvent->spe = 4.60e-11;
+  bEvent->muVmax = pmtRun->vMax[jpmt];
+  bEvent->F40 = 0;
+
+  // list of pulse start times in ns
+  std::vector<int> hitStartTime;
+  std::vector<int> hitEndTime;
+  for (int ip = 0; ip < nPulses; ip++)
+  {
+    hitStartTime.push_back(int(pmtRun->startTimes[jpmt][ip] * 1E9));
+    hitEndTime.push_back(int(pmtRun->startTimes[jpmt][ip] * 1E9) + int(pmtRun->peakWidths[jpmt][ip] * 1E9));
+  }
+
+  // fill puleses
+  for (int ip = 0; ip < nPulses; ip++)
+  {
+    Double_t charge = pmtRun->charge[jpmt][ip];
+    Double_t startTime = pmtRun->startTimes[jpmt][ip];
+    Double_t peakWidth = pmtRun->peakWidths[jpmt][ip];
+    Double_t peakHeight = pmtRun->peakHeights[jpmt][ip];
+    Double_t peakTime = pmtRun->peakTimes[jpmt][ip];
+
+    TPulse thePulse;
+    thePulse.istart = int(startTime * 1E9);
+    thePulse.iend = int(startTime * 1E9) + int(peakWidth * 1E9);
+    thePulse.time = startTime;
+    thePulse.tpeak = peakTime;
+    thePulse.pwidth = peakWidth;
+    thePulse.peak = peakHeight;
+    thePulse.q = charge;
+    int pLength = 50; // add a bit to each end of pulse
+    //thePulse.qerr=phitQErr;
+    if (thePulse.iend - thePulse.istart < 1)
+      continue;
+    // fill pulse digi
+    for (unsigned idigi = TMath::Max(0, thePulse.istart - pLength); idigi < TMath::Min(int(signal[jpmt].size()), thePulse.iend + pLength); ++idigi)
+      thePulse.digi.push_back(signal[jpmt][idigi]);
+    //printf(" xxxx iev %ldd ip %i %E %i %i digi %u \n", ientry, ip, startTime, thePulse.istart, thePulse.iend, thePulse.digi.size());
+    //printf(" xxx ipeak %i size %u  \n", ipeak, thePulse.digi.size());
+    int phistCount = pDir->GetList()->GetEntries() - 1;
+    // find peak
+    int ipeak = 0;
+    double dmax = 0;
+    for (unsigned idigi = 0; idigi < thePulse.digi.size(); ++idigi)
+    {
+      double di = -1.0 * (thePulse.digi[idigi]);
+      if (di > dmax)
+      {
+        dmax = di;
+        ipeak = idigi;
+      }
+    }
+    int pOffSet = hPulseOne->GetNbinsX() / 2;
+    bool isolated = false;
+    int isoTime = 100;
+    int timeCut = 6000;
+    double qcut = 0.2;
+    if (ip == 0 && hitStartTime[ip + 1] - hitEndTime[ip] > isoTime)
+      isolated = true;
+    if (ip < hitStartTime.size() - 1 && hitStartTime[ip] - hitEndTime[ip - 1] > isoTime && hitStartTime[ip + 1] - hitEndTime[ip] > isoTime)
+      isolated = true;
+    if (ip == hitStartTime.size() - 1 && hitStartTime[ip] - hitEndTime[ip - 1])
+      isolated = true;
+
+    //printf(" pulse %i qp %f hist %i start %i q %f \n", ip, dmax, phistCount, thePulse.istart, thePulse.q * -1.0E9);
+    if (phistCount < 500 && thePulse.istart > timeCut && thePulse.q * 1E9 > qcut && isolated)
+    {
+      TString hpname;
+      hpname.Form("PulseOne-%lld-%i-%ld-%i", ientry, ip, thePulse.digi.size(), int(thePulse.q * 1E12));
+      TString htitle;
+      htitle.Form("event %lld hit# %i length %ld q %i", ientry, ip, thePulse.digi.size(), int(thePulse.q * 1E12));
+      pDir->cd();
+      TH1D *hPOne = (TH1D *)hPulseOne->Clone(hpname);
+      hPOne->Reset();
+      hPOne->SetTitle(htitle);
+      outfile->cd();
+      for (unsigned idigi = 0; idigi < thePulse.digi.size(); ++idigi)
+      {
+        int pbin = idigi - ipeak + pOffSet;
+        //printf("\t pulse %i peak %i qp %f digi %i pbin %i q %f \n", ip, ipeak, dmax, idigi, pbin, thePulse.digi[idigi] * -1.0);
+        hPOne->SetBinContent(pbin, thePulse.digi[idigi]);
+      }
+    }
+
+    //printf(" ,,,,, %s ipeak %i size %u  (%i,%i) q %E peak %E sum %E \n", hpname.Data(), ip, thePulse.digi.size(), thePulse.istart, thePulse.iend, charge, thePulse.digi[0], hPOne->Integral(0, hPOne->GetNbinsX()));
+    /** fill summed pulse **/
+    hPulseCharge->Fill(thePulse.q * 1E9);
+    if (thePulse.istart > timeCut && thePulse.q * 1E9 > qcut && isolated)
+    {
+      ++pulseShapeNorm[jpmt];
+
+      for (unsigned idigi = 0; idigi < thePulse.digi.size(); ++idigi)
+      {
+        int pbin = idigi - ipeak + pOffSet;
+        double val = thePulse.digi[idigi];
+        hPulseSum[jpmt]->SetBinContent(pbin, hPulseSum[jpmt]->GetBinContent(pbin) + val);
+      }
+    } // end do pulse
+    // add the pulse
+    bEvent->hits.push_back(thePulse);
+  } // end pulse loop
+  tbTree->Fill();
+}
 void anaPulses::anaEntry(Long64_t ientry)
 {
   processedEvent->event = ientry;
+  signal.clear();
   signal.resize(1);
+  derivative.clear();
   derivative.resize(signal.size());
   integral.resize(derivative.size());
-
   signal[0] = pmtEvent->volt1;
 
   deltaT = pmtEvent->time[1] - pmtEvent->time[0];
@@ -421,22 +556,6 @@ void anaPulses::anaEntry(Long64_t ientry)
       int pmtNum = j;
       std::vector<double> digi = pmtEvent->volt1;
       int ndigi = digi.size();
-
-      /** do pulse **/
-      if (vMaxTime < 4.0E-6)
-        doPulse = false;
-      if (doPulse)
-      {
-        int startPulse = TMath::Max(0, startBin - 1000);
-        int endPulse = TMath::Min(int(ndigi), startBin + 500);
-        ++pulseShapeNorm[j];
-        for (int ibin = startPulse; ibin <= endPulse; ++ibin)
-        {
-          int pbin = ibin + 1 - startBin + 1000;
-          double val = digi[ibin];
-          hPulseSum[pmtNum]->SetBinContent(pbin, hPulseSum[pmtNum]->GetBinContent(pbin) + val);
-        }
-      } // end do pulse
     }
     //end of pmtNum loop
     sTitle += TString("tMax_") + to_string(tMaxEvent * 1e6) + TString("_vMax_") + to_string(vMaxEvent) + TString("_totalCharge_") + to_string(totalCharge);
@@ -485,8 +604,6 @@ void anaPulses::anaEntry(Long64_t ientry)
       delete hPeakFinding[i];
     }
   }
-  signal.clear();
-  derivative.clear();
 }
 
 std::vector<Double_t> anaPulses::DownSampler(std::vector<Double_t> sig, Int_t N)
