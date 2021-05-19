@@ -101,6 +101,8 @@ public:
   Double_t minPeakWidth = 3e-9;
   Double_t maxPeakWidth = 5000e-9;
   std::complex<double> complexSmall = 5.0E-2;
+  double maxVal;
+  double maxBin;
 
   std::vector<std::vector<Double_t>> signal;
   std::vector<std::vector<Double_t>> derivative;

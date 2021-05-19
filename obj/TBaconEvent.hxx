@@ -30,6 +30,8 @@ public:
   Double_t spe;
   Double_t F40;
   Double_t muVmax;
+  Double_t maxVal;
+  Int_t maxBin;
   //
   Double_t T0;
   Double_t totalCharge;

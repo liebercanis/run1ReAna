@@ -27,6 +27,8 @@ void TBaconEvent::clear()
   cMax = 0;
   baseline = 0;
   sDev = 0;
+  maxVal = 0;
+  maxBin = 0;
 
   hits.clear();
 }

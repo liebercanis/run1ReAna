@@ -349,6 +349,8 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
 {
   Int_t jpmt = 0;
   bEvent->clear();
+  bEvent->maxVal = maxVal;
+  bEvent->maxBin = maxBin;
   bEvent->event = ientry;
   bEvent->run = atoi(theTag(theTag.Last('_') + 1, theTag.Length() - theTag.Last('_')).Data());
   bEvent->npmt = 1;
@@ -511,6 +513,18 @@ void anaPulses::anaEntry(Long64_t ientry)
   derivative.resize(signal.size());
   integral.resize(derivative.size());
   signal[0] = pmtEvent->volt1;
+
+  /** find max bin **/
+  maxVal = 0;
+  maxBin = 0;
+  for (unsigned ib = 0; ib < signal[0].size(); ++ib)
+  {
+    if (signal[0][ib] < maxVal)
+    {
+      maxVal = signal[0][ib];
+      maxBin = ib;
+    }
+  }
 
   deltaT = pmtEvent->time[1] - pmtEvent->time[0];
   if (ientry == 0)
