@@ -10,27 +10,34 @@
 
 using namespace std;
 
-// class to store pmt hit 
+// class to store pmt hit
 
-class TPulse: public TNamed {
-  public:
-    TPulse();
-    ~TPulse(){;}
+class TPulse : public TNamed
+{
+public:
+  TPulse();
+  ~TPulse() { ; }
 
-    void clear();
-    // data elements
-    //  int nev;
-    int istart;
-    int good;
-    int kind;
-    float time;
-    float tpeak;
-    float peak;
-    float pwidth;
-    float q;
-    float qerr;
+  void clear();
+  // data elements
+  //  int nev;
+  int istart;
+  int iend;
+  int good;
+  int kind;
+  float time;
+  float tpeak;
+  float peak;
+  float pwidth;
+  float q;
+  float qerr;
+  float baseline;
+  float baselineErr;
+  float slope;
+  float slopeErr;
+  float baseChi;
+  std::vector<double> digi;
 
-    ClassDef(TPulse,7)
+  ClassDef(TPulse, 8)
 };
 #endif
-

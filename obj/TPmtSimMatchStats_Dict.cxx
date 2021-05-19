@@ -214,7 +214,7 @@ namespace {
 "/usr/local/root/include",
 "/.",
 "/home/admin/root-6.14.06/include",
-"/home/gold/bacon/pmtLocal/obj/",
+"/home/gold/bacon/run1ReAna/obj/",
 0
     };
     static const char* fwdDeclCode = R"DICTFWDDCLS(

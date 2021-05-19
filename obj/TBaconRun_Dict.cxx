@@ -150,8 +150,8 @@ namespace {
     static const char* includePaths[] = {
 "/usr/local/root/include",
 "/.",
-"/usr/local/root_v6.12.06/include",
-"/Users/gold/baconLocal/git/bacon/run1ReAna/obj/",
+"/home/admin/root-6.14.06/include",
+"/home/gold/bacon/run1ReAna/obj/",
 0
     };
     static const char* fwdDeclCode = R"DICTFWDDCLS(
@@ -182,7 +182,7 @@ nullptr};
     if (!isInitialized) {
       TROOT::RegisterModule("TBaconRun_Dict",
         headers, includePaths, payloadCode, fwdDeclCode,
-        TriggerDictionaryInitialization_TBaconRun_Dict_Impl, {}, classesHeaders);
+        TriggerDictionaryInitialization_TBaconRun_Dict_Impl, {}, classesHeaders, /*has no C++ module*/false);
       isInitialized = true;
     }
   }
