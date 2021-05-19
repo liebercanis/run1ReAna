@@ -121,7 +121,6 @@ std::vector<Double_t> anaPulses::decon(std::vector<Double_t> inputWave)
 anaPulses::anaPulses(TString tag, Int_t maxEvents)
 {
   printf(" starting anaPulses tag %s \n", tag.Data());
-<<<<<<< HEAD
   if (!initDecon())
   {
     printf(" !!!! initDecon failed, abort!  \n");
@@ -134,8 +133,6 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
   fPulseBaseline->SetParName(1, "slope");
   fPulseBaseline->SetParameters(0., 0.);
 
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
   theTag = tag;
 
   for (int num = 0; num < NPMT; ++num)
@@ -176,10 +173,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
   printf(" opening output file %s \n", outfileName.Data());
   outfile = new TFile(outfileName, "recreate");
   pDir = outfile->mkdir("pulseHist");
-<<<<<<< HEAD
   evDir = outfile->mkdir("eventHist");
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
   outfile->cd();
   tbTree = new TTree("TBacon", "TBacon data");
   bEvent = new TBaconEvent();
@@ -202,10 +196,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
   hPulseCharge = new TH1D("PulseCharge", "PulseOne", 1000, 0, 100);
   pDir->cd();
   hPulseOne = new TH1D("PulseOne", "PulseOne", 400, 0, 400);
-<<<<<<< HEAD
   //hPulseOne->Sumw2();
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
   outfile->cd();
 
   // set up memory for reading
@@ -253,13 +244,10 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
         hWaveSum[ipmt] = new TH1D(hname, hname, nSamples, 0, nSamples);
         hname.Form("PulseSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
         hPulseSum[ipmt] = (TH1D *)hPulseOne->Clone(hname);
-<<<<<<< HEAD
         hname.Form("PulseSumUn%i-Ev%lld-%s", ipmt, nentries, tag.Data());
         hPulseSumUn[ipmt] = (TH1D *)hPulseOne->Clone(hname);
         hname.Form("PulseFirstSum%i-Ev%lld-%s", ipmt, nentries, tag.Data());
         hPulseFirstSum[ipmt] = new TH1D(hname, hname, 1500, 0, 1500);
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
         //hPulseSum[ipmt] = new TH1D(hname, hname, 1500, 0, 1500);
         hname.Form("Sum_pmt%i", ipmt);
         hSum[ipmt] = new TH1D(hname, hname, nSamples, pmtEvent->time[ipmt], pmtEvent->time[nSamples - 1]);
@@ -299,7 +287,6 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
     /* do analysis here */
     anaEntry(ientry);
     fillBaconEvent(ientry);
-<<<<<<< HEAD
     // save/clone  event histograms
     if (eventsSaved < maxEventsSaved)
     {
@@ -324,12 +311,9 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
         delete hPeakFinding[j];
       }
     }
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
   }
   outfile->cd();
 
-<<<<<<< HEAD
   printf(" END RUN %s  %lld pulses %lld \n", tag.Data(), nentries, ntuplePulse->GetEntries());
   printf(" pulse norm first %i late %i  \n", pulseFirstShapeNorm[0], pulseShapeNorm[0]);
   printf(" events %i saved \n ", eventsSaved);
@@ -339,18 +323,12 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
     delete hWaveOne[ipmt];
     delete hWaveRawOne[ipmt];
   } // normalize
-=======
-  //outfile->ls();
-  delete hPulseOne;
-  // normalize
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
   TH1D *hres = hPulseSum[0];
   if (pulseShapeNorm[0])
   {
     for (int ibin = 0; ibin < hres->GetNbinsX(); ++ibin)
       hres->SetBinContent(ibin, hres->GetBinContent(ibin) / double(pulseShapeNorm[0]));
   }
-<<<<<<< HEAD
   hres = hPulseSumUn[0];
   if (pulseShapeNorm[0])
   {
@@ -364,8 +342,6 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
       hres->SetBinContent(ibin, hres->GetBinContent(ibin) / double(pulseFirstShapeNorm[0]));
   }
   outfile->ls();
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
   outfile->Write();
 }
 
@@ -416,11 +392,7 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
     thePulse.pwidth = peakWidth;
     thePulse.peak = peakHeight;
     thePulse.q = charge;
-<<<<<<< HEAD
     int pLength = 100; // add a bit to each end of pulse
-=======
-    int pLength = 50; // add a bit to each end of pulse
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
     //thePulse.qerr=phitQErr;
     if (thePulse.iend - thePulse.istart < 1)
       continue;
@@ -446,11 +418,7 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
     bool isolated = false;
     int isoTime = 100;
     int timeCut = 6000;
-<<<<<<< HEAD
     double qcut = 0.0564 * 3.0; //0.2; from fit to noise peak
-=======
-    double qcut = 0.2;
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
     if (ip == 0 && hitStartTime[ip + 1] - hitEndTime[ip] > isoTime)
       isolated = true;
     if (ip < hitStartTime.size() - 1 && hitStartTime[ip] - hitEndTime[ip - 1] > isoTime && hitStartTime[ip + 1] - hitEndTime[ip] > isoTime)
@@ -470,19 +438,15 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
       hPOne->Reset();
       hPOne->SetTitle(htitle);
       outfile->cd();
-<<<<<<< HEAD
       double fitMin = pOffSet - pLength - thePulse.pwidth * 0.5E9;
       double fitMax = pOffSet - thePulse.pwidth * 0.5E9;
       //printf(" %i width %f fit from %f to %f \n", ip, thePulse.pwidth * 1E9, fitMin, fitMax);
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
       for (unsigned idigi = 0; idigi < thePulse.digi.size(); ++idigi)
       {
         int pbin = idigi - ipeak + pOffSet;
         //printf("\t pulse %i peak %i qp %f digi %i pbin %i q %f \n", ip, ipeak, dmax, idigi, pbin, thePulse.digi[idigi] * -1.0);
         hPOne->SetBinContent(pbin, thePulse.digi[idigi]);
       }
-<<<<<<< HEAD
       fPulseBaseline->SetParameters(0., 0.);
       hPOne->Fit(fPulseBaseline, "QOLM", "", fitMin, fitMax); //Q for quiet O do not draw L like W minuit
       if (fPulseBaseline->IsValid())
@@ -505,8 +469,6 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
           hPOne->SetBinContent(pbin, hPOne->GetBinContent(pbin) - thePulse.baseline);
         }
       }*/
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
     }
 
     //printf(" ,,,,, %s ipeak %i size %u  (%i,%i) q %E peak %E sum %E \n", hpname.Data(), ip, thePulse.digi.size(), thePulse.istart, thePulse.iend, charge, thePulse.digi[0], hPOne->Integral(0, hPOne->GetNbinsX()));
@@ -519,7 +481,6 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
       for (unsigned idigi = 0; idigi < thePulse.digi.size(); ++idigi)
       {
         int pbin = idigi - ipeak + pOffSet;
-<<<<<<< HEAD
         hPulseSum[jpmt]->SetBinContent(pbin, hPulseSum[jpmt]->GetBinContent(pbin) + thePulse.digi[idigi] - thePulse.baseline);
         hPulseSumUn[jpmt]->SetBinContent(pbin, hPulseSumUn[jpmt]->GetBinContent(pbin) + thePulse.digi[idigi]);
       }
@@ -536,12 +497,6 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
       }
     } // end do pulse
 
-=======
-        double val = thePulse.digi[idigi];
-        hPulseSum[jpmt]->SetBinContent(pbin, hPulseSum[jpmt]->GetBinContent(pbin) + val);
-      }
-    } // end do pulse
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
     // add the pulse
     bEvent->hits.push_back(thePulse);
   } // end pulse loop
@@ -844,7 +799,6 @@ void anaPulses::anaEntry(Long64_t ientry)
       int pmtNum = j;
       std::vector<double> digi = pmtEvent->volt1;
       int ndigi = digi.size();
-<<<<<<< HEAD
       /*** do deconvolution here ****/
       std::vector<Double_t> deconWave = decon(signal[j]);
       for (int i = 0; i < deconWave.size(); i++)
@@ -852,8 +806,6 @@ void anaPulses::anaEntry(Long64_t ientry)
         hWaveRawOne[j]->SetBinContent(i + 1, signal[j][i]);
         hWaveOne[j]->SetBinContent(i + 1, deconWave[i]);
       }
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
     }
     //end of pmtNum loop
     sTitle += TString("tMax_") + to_string(tMaxEvent * 1e6) + TString("_vMax_") + to_string(vMaxEvent) + TString("_totalCharge_") + to_string(totalCharge);
@@ -893,18 +845,6 @@ void anaPulses::anaEntry(Long64_t ientry)
   processedTree->Fill();
   //pmtRun->Write();
   processedEvent->clear();
-<<<<<<< HEAD
-=======
-  if (ientry > NHistograms)
-  {
-    for (int i = 0; i < signal.size(); i++)
-    {
-      delete hSignal[i];
-      delete hDerivative[i];
-      delete hPeakFinding[i];
-    }
-  }
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
 }
 
 std::vector<Double_t> anaPulses::DownSampler(std::vector<Double_t> sig, Int_t N)

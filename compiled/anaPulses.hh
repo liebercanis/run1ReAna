@@ -52,7 +52,6 @@ public:
 
   void anaEntry(Long64_t ientry);
   void fillBaconEvent(Long64_t ientry);
-<<<<<<< HEAD
 
   TVirtualFFT *fFFT;
   TVirtualFFT *fInverseFFT;
@@ -62,8 +61,6 @@ public:
   std::vector<Double_t> inverseFFT(std::vector<std::complex<double>> VectorComplex);
 
   std::vector<std::complex<double>> vResponseFFT;
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
 
   std::vector<Double_t> DownSampler(std::vector<Double_t>, Int_t NSteps);
   std::vector<Double_t> Derivative(std::vector<Double_t>, Int_t NSteps);
@@ -93,12 +90,9 @@ public:
   double microSec = 1.0E6;
   TFile *outfile;
   TDirectory *pDir;
-<<<<<<< HEAD
   TDirectory *evDir;
 
   TF1 *fPulseBaseline;
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
   /*nDer from 
      Pulse processing routines for neutron time-of-flight data P.Žugec et al
   */
@@ -132,11 +126,8 @@ public:
   TH1D *hWave[NPMT];
   TH1D *hWaveSum[NPMT];
   TH1D *hPulseSum[NPMT];
-<<<<<<< HEAD
   TH1D *hPulseSumUn[NPMT];
   TH1D *hPulseFirstSum[NPMT];
-=======
->>>>>>> f0dfb5122b6d53a2719b5e05c077401073376aeb
   TH1D *hPulseOne;
   TH1D *hPulseCharge;
   Int_t pulseShapeNorm[NPMT];

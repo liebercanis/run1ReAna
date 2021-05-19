@@ -82,13 +82,11 @@ def main(args):
             continue
         total = total +1
         print(total," run job ", i, " tag ",files[i] , " run  ",rhs)
-        '''
         process = Popen(['pulses', files[i]], stdout=PIPE,stderr=PIPE, env=myEnv)
         stdout, stderr = process.communicate()
         process.wait()
         print(stdout)
         print(stderr)
-i       '''
 
 if __name__ == '__main__':
     main(sys.argv[1:])
