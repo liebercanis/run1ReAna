@@ -1,4 +1,3 @@
-#include <sstream>
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
@@ -13,7 +12,6 @@
 #include <TNtuple.h>
 #include <TFile.h>
 #include <Rtypes.h>
-#include <TDirectory.h>
 #include <TH1D.h>
 #include <TF1.h>
 #include <TFormula.h>
@@ -23,44 +21,20 @@
 #include <algorithm> // std::sort
 #include "TSpectrum.h"
 #include <math.h>
+#include <TDatime.h>
+#include "TRandom2.h"
+
 //
 #include "TPmtEvent.hxx"
+#include "TPmtSimulation.hxx"
 #include "TPmtRun.hxx"
-#include "TBaconEvent.hxx"
-//#include "TBaconRun.hxx"
 
-class anaPulses
+class anaSim
 {
 public:
-  typedef std::complex<double> Complex;
-  anaPulses(TString tag, Int_t maxEvents);
-  virtual ~anaPulses() { ; }
-  enum
-  {
-    NPMT = 2
-  };
-  TTree *pmtTree;
-  TTree *tbTree;
-  TBaconEvent *bEvent;
-  //TPmtSimulation *simEvent;
-  TPmtEvent *pmtEvent;
-  TPmtEvent *processedEvent;
-  TPmtRun *pmtRun;
-  TNtuple *ntupleEvent;
-  TNtuple *ntuplePulse;
-  TTree *processedTree;
-
-  void anaEntry(Long64_t ientry);
-  void fillBaconEvent(Long64_t ientry);
-
-  TVirtualFFT *fFFT;
-  TVirtualFFT *fInverseFFT;
-  bool initDecon();
-  std::vector<Double_t> decon(std::vector<Double_t> inputWave);
-  std::vector<std::complex<double>> FFT(std::vector<double> vin);
-  std::vector<Double_t> inverseFFT(std::vector<std::complex<double>> VectorComplex);
-
-  std::vector<std::complex<double>> vResponseFFT;
+  anaSim(Int_t irun, Int_t nDer, Int_t dsNum);
+  anaSim();
+  ~anaSim() { ; };
 
   std::vector<Double_t> DownSampler(std::vector<Double_t>, Int_t NSteps);
   std::vector<Double_t> Derivative(std::vector<Double_t>, Int_t NSteps);
@@ -80,58 +54,32 @@ public:
   std::vector<Double_t> TrapFilter(std::vector<Double_t> sig, Int_t ramp, Int_t flat, Int_t pmtNum, Int_t ientry);
   std::vector<Double_t> LowPassFrequency(std::vector<Double_t> input, Double_t cutoff, Double_t sampleRate);
   std::vector<Double_t> NotchFilter(std::vector<Double_t> input, Double_t notch, Double_t BW, Double_t sampleRate);
+  TPmtSimulation *simEvent;
+  TPmtEvent *pmtEvent;
+  TPmtEvent *processedEvent;
+  TPmtRun *pmtRun;
 
-  TString theTag;
   Int_t NEvents;
-  Int_t nSamples;
   Int_t NHistograms = 100;
   Double_t pi = 3.14159265359;
   Double_t deltaT = 0;
-  double microSec = 1.0E6;
-  TFile *outfile;
-  TDirectory *pDir;
-  TDirectory *evDir;
-
-  TF1 *fPulseBaseline;
-  /*nDer from 
-     Pulse processing routines for neutron time-of-flight data P.Žugec et al
-  */
-  Int_t nDer = 7;
   bool peakFindingDebug = false;
+
   Double_t minPeakWidth = 3e-9;
   Double_t maxPeakWidth = 5000e-9;
-  std::complex<double> complexSmall = 5.0E-2;
-
   std::vector<std::vector<Double_t>> signal;
   std::vector<std::vector<Double_t>> derivative;
   std::vector<std::vector<Double_t>> integral;
 
   TH1D *hSignal[2];
-  TH1D *hSignalb[2];
-  TH1D *hPeakFinding[2];
   TH1D *hDerivative[2];
   TH1D *hBaseline[2];
+  TH1D *hWindowSum[2];
+  TH1D *hSumWaveform[2];
   TH1D *hSum[2];
   TH1D *hSumFresh[2];
   TH1D *hSumBaseline[2];
   TH1D *hIntegral[2];
   TH1D *hFlatBaseline[2];
-  TH1D *hWindowSum[2];
-  TH1D *hSumWaveform[2];
-
-  // summed wave histograms
-  TH1D *hWaveRawOne[NPMT];
-  TH1D *hWaveOne[NPMT];
-  TH1D *hWaveRaw[NPMT];
-  TH1D *hWave[NPMT];
-  TH1D *hWaveSum[NPMT];
-  TH1D *hPulseSum[NPMT];
-  TH1D *hPulseSumUn[NPMT];
-  TH1D *hPulseFirstSum[NPMT];
-  TH1D *hPulseOne;
-  TH1D *hPulseCharge;
-  Int_t pulseShapeNorm[NPMT];
-  Int_t pulseFirstShapeNorm[NPMT];
-  Int_t eventsSaved;
-  Int_t maxEventsSaved;
+  TH1D *hRawSig[2];
 };
