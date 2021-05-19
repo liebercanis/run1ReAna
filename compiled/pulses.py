@@ -39,7 +39,8 @@ def main(args):
 
 
     #print(myEnv)
-    
+  
+
     n = len(runs)
     if (n < 1):
         print("\n no runs found ")
@@ -62,17 +63,32 @@ def main(args):
             print(i)
             count = count +1
 
+    goodRunStart = [ 3000,20005,20025,20045,20065,20020]
+    goodRunEnd   = [ 3020,20020,20040,20060,20080,20222]
 
+    print("good run ranges")
+    for i in range(0,len(goodRunStart)):
+        print(i," ",goodRunStart[i]," ",goodRunEnd[i])
 
-
+    total = 0
     for i in range(0, n):
-        print(" run job ", i, " tag ",files[i])
+        lhs, rhs = files[i].split("_", 1)
+        good = 0
+        for j in range(0,len(goodRunStart)):
+            if int(rhs) >= goodRunStart[j] and int(rhs) <= goodRunEnd[j] :
+                good = 1
+
+        if good == 0 : 
+            continue
+        total = total +1
+        print(total," run job ", i, " tag ",files[i] , " run  ",rhs)
+        '''
         process = Popen(['pulses', files[i]], stdout=PIPE,stderr=PIPE, env=myEnv)
         stdout, stderr = process.communicate()
         process.wait()
         print(stdout)
         print(stderr)
-
+i       '''
 
 if __name__ == '__main__':
     main(sys.argv[1:])
