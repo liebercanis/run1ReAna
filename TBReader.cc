@@ -51,8 +51,7 @@ public:
   void getFileList();
   void getMaxValue(TH1D *h, int &maxbin);
   void setMaxValue(TH1D *h, double vmax);
-  std::vector<string> vfiles;
-  std::vector<int> vruns;
+  std::map<int, string> runList;
   Int_t currentRun;
   Long64_t treeNumber;
   Long64_t nloop;
@@ -81,28 +80,31 @@ void TBReader::getFileList()
   if (files)
   {
     TSystemFile *file;
-    TString fname;
+    TString tfname;
+    string fname;
     TIter next(files);
+    std::map<int, string>::iterator mapIter = runList.begin();
     while ((file = (TSystemFile *)next()))
     {
-      fname = file->GetName();
-      if (!file->IsDirectory() && fname.EndsWith(ext))
+      fname = string(file->GetName());
+      tfname = TString(file->GetName());
+      if (!file->IsDirectory() && tfname.EndsWith(ext))
       {
-        cout << fname.Data() << endl;
-        vfiles.push_back(fname.Data());
         vector<string> tokens;
         string intermediate;
-        stringstream check1(vfiles[vfiles.size() - 1]);
+        stringstream check1(fname);
         // Tokenizing w.r.t. space ' '
         while (std::getline(check1, intermediate, '_'))
           tokens.push_back(intermediate);
         int irun = atoi(tokens[tokens.size() - 2].c_str());
-        cout << "  run " << irun << '\n';
-        vruns.push_back(irun);
+        //cout << fname << "  run " << irun << '\n';
+        runList.insert(mapIter, std::pair<int, string>(irun, fname));
       }
     }
   }
-  printf(" getFileList found %lu files \n", vfiles.size());
+  printf(" getFileList found %lu files: \n", runList.size());
+  for (std::map<int, string>::iterator mapIter = runList.begin(); mapIter != runList.end(); ++mapIter)
+    std::cout << mapIter->first << " => " << mapIter->second << '\n';
 }
 
 void TBReader::getMaxValue(TH1D *h, int &maxbin)
@@ -236,8 +238,8 @@ void TBReader::newRun()
 
 TBReader::TBReader(Int_t runstart, Int_t runstop)
 {
+  printf("TBReader starting run %i to %i \n", runstart, runstop);
   getFileList();
-  return;
   currentRun = -1;
   treeNumber - 1;
   hLifeRun = NULL;
@@ -257,23 +259,18 @@ TBReader::TBReader(Int_t runstart, Int_t runstop)
 
   //bool VmaxCut = false;
 
-  // files must be in order by run
-  TString nfile[7];
-  nfile[0] = TString("TBAcon_3000_5000_DS_2.root");
-  nfile[1] = TString("TBAcon_10000_20000_DS_2.root");
-  nfile[2] = TString("TBAcon_20001_20100_DS_2.root");
-  nfile[3] = TString("TBAcon_20101_20222_DS_2.root");
-  nfile[4] = TString("TBAcon_30000_30452_DS_2.root");
-  nfile[5] = TString("TBAcon_30440_30443_DS_2.root");
-  nfile[6] = TString("TBAcon_30453_40000_DS_2.root");
   tree = new TChain("TBacon");
   bEvent = new TBaconEvent();
   tree->SetBranchAddress("bevent", &bEvent);
   tree->GetListOfFiles()->ls();
-  for (int ifile = 0; ifile < 7; ++ifile)
+  for (std::map<int, string>::iterator mapIter = runList.begin(); mapIter != runList.end(); ++mapIter)
   {
-    TString addFile = TString("rootFiles/") + nfile[ifile];
-    tree->Add(addFile);
+    TString addFile = TString("run1RootData/") + TString(mapIter->second.c_str());
+    if (mapIter->first >= runstart && mapIter->first <= runstop)
+    {
+      std::cout << " add run " << mapIter->first << '\n';
+      tree->Add(addFile);
+    }
   }
   cout << " TBacon has " << tree->GetEntries() << endl;
 
@@ -308,7 +305,7 @@ TBReader::TBReader(Int_t runstart, Int_t runstop)
   // event
   TH1D *hMuVmax = new TH1D("MuVmax", " muVmax ", 1000, 0, 1);
   hMuVmax->GetXaxis()->SetTitle("muon Vmax");
-  TNtuple *ntEvent = new TNtuple("ntEvent", " event ", "entry:run:ntrig:nhits:muVmax:QSumCut");
+  TNtuple *ntEvent = new TNtuple("ntEvent", " event ", "entry:maxBin:maxVal:run:ntrig:nhits:muVmax:QSumCut");
 
   //hit
   TH1D *hHitResidual = new TH1D("HitResidual7microsec", " residual  ", 1000, 0, 5);
@@ -345,12 +342,12 @@ TBReader::TBReader(Int_t runstart, Int_t runstop)
     // if new run
     if (bEvent->run != currentRun)
       newRun();
-
-    if (bEvent->npmt != 0)
-      continue; // only use PMT zero
+    if (bEvent->npmt != 1) // in anaPules, i set to one.. will fix
+      continue;            // only use PMT zero
 
     ++bRun->totTrigger;
-    //if(entry%1000==0) printf(" ... %lld run %d  nhits %lu \n",entry,bEvent->run,bEvent->hits.size());
+    if (entry % 1000 == 0)
+      printf(" ... %lld run %d  bevent %lld nhits %lu \n", entry, bEvent->run, ntEvent->GetEntries(), bEvent->hits.size());
 
     hNHitTotQ->Fill(bEvent->totQ, bEvent->hits.size());
     hNHits->Fill(bEvent->hits.size());
@@ -517,7 +514,7 @@ TBReader::TBReader(Int_t runstart, Int_t runstop)
       }
     }
 
-    ntEvent->Fill(float(entry), float(bEvent->run), float(bRun->goodTrigger), float(bEvent->hits.size()), float(bEvent->muVmax), float(QSumCut));
+    ntEvent->Fill(float(entry), bEvent->maxBin, bEvent->maxVal, float(bEvent->run), float(bRun->goodTrigger), float(bEvent->hits.size()), float(bEvent->muVmax), float(QSumCut));
   }
   // run landau fit for last run
   newRun();

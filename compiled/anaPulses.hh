@@ -98,6 +98,8 @@ public:
   */
   Int_t nDer = 7;
   bool peakFindingDebug = false;
+  bool goodEvent;
+  Long64_t nGoodEvents;
   Double_t minPeakWidth = 3e-9;
   Double_t maxPeakWidth = 5000e-9;
   std::complex<double> complexSmall = 5.0E-2;
@@ -132,6 +134,7 @@ public:
   TH1D *hPulseFirstSum[NPMT];
   TH1D *hPulseOne;
   TH1D *hPulseCharge;
+  TH1D *hMaxVal;
   Int_t pulseShapeNorm[NPMT];
   Int_t pulseFirstShapeNorm[NPMT];
   Int_t eventsSaved;
