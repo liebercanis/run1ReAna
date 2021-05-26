@@ -47,12 +47,26 @@ class TBReader
 public:
   TBReader(Int_t runstart = 3000, Int_t runstop = 29999);
   virtual ~TBReader() { ; }
+  enum
+  {
+    MAXSETS = 6
+  };
+  TString runTag[MAXSETS];
+  TString runRange[MAXSETS];
+  int setEvents[MAXSETS];
+  TFile *fout;
+  TDirectory *trigDir;
+  TDirectory *setDir;
   void newRun();
   void getFileList();
   void getMaxValue(TH1D *h, int &maxbin);
   void setMaxValue(TH1D *h, double vmax);
+  void getRunSet();
+  int irun;
+  int iset;
   std::map<int, string> runList;
   Int_t currentRun;
+  Int_t currentSet;
   Long64_t treeNumber;
   Long64_t nloop;
   TChain *tree;
@@ -64,17 +78,44 @@ public:
   TH1D *hLife;
   TH1D *hChargeSum;
   TH1D *hLifeRun;
+  TH1D *hLifeSet[MAXSETS];
   TH1D *hLifeACutRun;
   TH1D *hChargeSumRun;
   TH1D *hChargeCutRun;
   TH1D *hLifeQCutRun;
   TH1D *hChargeQCutRun;
 };
+void TBReader::getRunSet()
+{
+  iset = -1;
+  irun = -1;
+  irun = bEvent->run;
+  if (bEvent->run >= 3000 && bEvent->run <= 3020)
+  {
+    irun = irun - 3000 + 20000 - 20;
+    iset = 0;
+  }
+  if (bEvent->run >= 20005 && bEvent->run < 20020)
+    iset = 1;
+  if (bEvent->run >= 20025 && bEvent->run <= 20040)
+    iset = 2;
+  if (bEvent->run >= 20045 && bEvent->run <= 20060)
+    iset = 3;
+  if (bEvent->run >= 20065 && bEvent->run <= 20080)
+    iset = 4;
+  if (bEvent->run >= 20220 && bEvent->run <= 20222)
+    iset = 5;
+  if (iset < 0)
+  {
+    printf(" ..... skipping run  %i  \n", bEvent->run);
+  }
+}
 
 void TBReader::getFileList()
 {
   TString dirname("/data2/mgold/run1RootData/");
   TString ext("_0.root");
+  TString prefix("anaPulsesDecon");
   TSystemDirectory dir(dirname, dirname);
   TList *files = dir.GetListOfFiles();
   if (files)
@@ -88,7 +129,7 @@ void TBReader::getFileList()
     {
       fname = string(file->GetName());
       tfname = TString(file->GetName());
-      if (!file->IsDirectory() && tfname.EndsWith(ext))
+      if (!file->IsDirectory() && tfname.EndsWith(ext) && tfname.BeginsWith(prefix))
       {
         vector<string> tokens;
         string intermediate;
@@ -219,28 +260,63 @@ void TBReader::newRun()
       bRun->aveSpeErr = bRun->aveSpe * sqrt(1. / bRun->specSum + 1. / bRun->nevq);
     }
     treeRun->Fill();
-    printf(" ... entry %lld end of run %i tot(good) %lld(%lld) trigs  ", nloop, currentRun, bRun->totTrigger, bRun->goodTrigger);
+    printf("   at entry %lld end of run %i tot(good) %lld(%lld) trigs  ", nloop, currentRun, bRun->totTrigger, bRun->goodTrigger);
     printf("   ending run %d size %lld events %d totSPE %E ", bRun->run, treeRun->GetEntries(), bRun->nevc, bRun->specSum);
-    printf("  max  %.3f+/-%.3f mpv %.3f+/-%.3f \n", bRun->maxc, bRun->maxcErr, bRun->mpvc, bRun->mpvcErr);
+    printf("   max  %.3f+/-%.3f mpv %.3f+/-%.3f \n", bRun->maxc, bRun->maxcErr, bRun->mpvc, bRun->mpvcErr);
   }
 
   bRun->clear();
   bRun->run = bEvent->run;
   currentRun = bEvent->run;
-  hLifeRun = (TH1D *)hLife->Clone(Form("LifeRun%5i", int(currentRun)));
-  hChargeSumRun = (TH1D *)hChargeSum->Clone(Form("ChargeSumRun%5i", int(currentRun)));
-  hChargeCutRun = (TH1D *)hChargeSum->Clone(Form("ChargeCutRun%5i", int(currentRun)));
-  hLifeQCutRun = (TH1D *)hLife->Clone(Form("LifeQCutRun%5i", int(currentRun)));
-  hLifeACutRun = (TH1D *)hLife->Clone(Form("LifeQACutRun%5i", int(currentRun)));
-  hChargeQCutRun = (TH1D *)hChargeSum->Clone(Form("ChargeQCutRun%5i", int(currentRun)));
-  printf(" ... starting run %d \n", bRun->run);
+  hLifeRun = (TH1D *)hLife->Clone(Form("LifeRun%05i", int(currentRun)));
+  hLifeACutRun = (TH1D *)hLife->Clone(Form("LifeQACutRun%05i", int(currentRun)));
+  hLifeQCutRun = (TH1D *)hLife->Clone(Form("LifeQCutRun%05i", int(currentRun)));
+  hChargeSumRun = (TH1D *)hChargeSum->Clone(Form("ChargeSumRun%05i", int(currentRun)));
+  hChargeCutRun = (TH1D *)hChargeSum->Clone(Form("ChargeCutRun%05i", int(currentRun)));
+  hChargeQCutRun = (TH1D *)hChargeSum->Clone(Form("ChargeQCutRun%05i", int(currentRun)));
+  /*
+  fout->Add(hLifeRun);
+  fout->Add(hLifeACutRun);
+  fout->Add(hLifeQCutRun);
+  fout->Add(hChargeSumRun);
+  fout->Add(hChargeCutRun);
+  fout->Add(hChargeQCutRun);
+  */
+  getRunSet();
+  if (iset != currentSet)
+  {
+    currentSet = iset;
+    printf(" starting  set %d \n", iset);
+    setDir->cd();
+    hLifeSet[iset] = (TH1D *)hLife->Clone(Form("LifeSet-%s-%s", runRange[iset].Data(), runTag[iset].Data()));
+    hLifeSet[iset]->SetTitle(Form("LifeSet %s %s", runRange[iset].Data(), runTag[iset].Data()));
+    fout->cd();
+  }
+  printf(" starting run %d irun %d set %d \n", bRun->run, irun, iset);
 }
 
 TBReader::TBReader(Int_t runstart, Int_t runstop)
 {
+  for (int jset = 0; jset < MAXSETS; ++jset)
+    setEvents[jset] = 0;
+
+  runTag[0] = TString("00PPM-MU");
+  runTag[1] = TString("01PPM-Ran");
+  runTag[2] = TString("02PPM-Ran");
+  runTag[3] = TString("05PPM-Ran");
+  runTag[4] = TString("10PPM-Ran");
+  runTag[5] = TString("10PPM-MU");
+  runRange[0] = TString("03000-03020");
+  runRange[1] = TString("20005-20020");
+  runRange[2] = TString("20025-20040");
+  runRange[3] = TString("20045-20060");
+  runRange[4] = TString("20065-20080");
+  runRange[5] = TString("20220-20222");
+
   printf("TBReader starting run %i to %i \n", runstart, runstop);
   getFileList();
   currentRun = -1;
+  currentSet = -1;
   treeNumber - 1;
   hLifeRun = NULL;
   hChargeSumRun = NULL;
@@ -274,9 +350,10 @@ TBReader::TBReader(Int_t runstart, Int_t runstop)
   }
   cout << " TBacon has " << tree->GetEntries() << endl;
 
-  TFile *fout = new TFile(Form("TBReader-%i-%i-%i-bins-notrig.root", runstart, runstop, lifeBins), "RECREATE");
+  fout = new TFile(Form("TBReader-%i-%i-%i-bins-notrig.root", runstart, runstop, lifeBins), "RECREATE");
   cout << " output file is  " << fout->GetName() << endl;
-  TDirectory *trigDir = fout->mkdir("trigDir");
+  trigDir = fout->mkdir("trigDir");
+  setDir = fout->mkdir("setDir");
   fout->cd();
 
   treeRun = new TTree("tRun", " by Run data ");
@@ -305,7 +382,7 @@ TBReader::TBReader(Int_t runstart, Int_t runstop)
   // event
   TH1D *hMuVmax = new TH1D("MuVmax", " muVmax ", 1000, 0, 1);
   hMuVmax->GetXaxis()->SetTitle("muon Vmax");
-  TNtuple *ntEvent = new TNtuple("ntEvent", " event ", "entry:maxBin:maxVal:run:ntrig:nhits:muVmax:QSumCut");
+  TNtuple *ntEvent = new TNtuple("ntEvent", " event ", "entry:maxBin:maxVal:run:ntrig:nhits:totQ:totHit");
 
   //hit
   TH1D *hHitResidual = new TH1D("HitResidual7microsec", " residual  ", 1000, 0, 5);
@@ -342,9 +419,10 @@ TBReader::TBReader(Int_t runstart, Int_t runstop)
     // if new run
     if (bEvent->run != currentRun)
       newRun();
-    if (bEvent->npmt != 1) // in anaPules, i set to one.. will fix
+    if (bEvent->npmt != 0) // in anaPules, i set to one.. will fix
       continue;            // only use PMT zero
 
+    setEvents[iset] += 1;
     ++bRun->totTrigger;
     if (entry % 1000 == 0)
       printf(" ... %lld run %d  bevent %lld nhits %lu \n", entry, bEvent->run, ntEvent->GetEntries(), bEvent->hits.size());
@@ -463,7 +541,6 @@ TBReader::TBReader(Int_t runstart, Int_t runstop)
     // muonVmax cut
     hMuVmax->Fill(bEvent->muVmax);
     //if(VmaxCut&&bEvent->muVmax  < 0.05) continue;
-
     // loop over pulses
     for (unsigned ip = 0; ip < bEvent->hits.size(); ++ip)
     {
@@ -496,8 +573,8 @@ TBReader::TBReader(Int_t runstart, Int_t runstop)
       //if(peakCut||afterCut) continue;
       hLifeRun->SetBinContent(hitBin, hLifeRun->GetBinContent(hitBin) + hitq);
       hLifeRun->SetBinError(hitBin, sqrt(pow(hLifeRun->GetBinError(hitBin), 2) + pow(hitqerr, 2)));
-      hLifeRun->SetBinContent(hitBin, hLifeRun->GetBinContent(hitBin) + hitq);
-      hLifeRun->SetBinError(hitBin, sqrt(pow(hLifeRun->GetBinError(hitBin), 2) + pow(hitqerr, 2)));
+      hLifeSet[iset]->SetBinContent(hitBin, hLifeSet[iset]->GetBinContent(hitBin) + hitq);
+      hLifeSet[iset]->SetBinError(hitBin, sqrt(pow(hLifeSet[iset]->GetBinError(hitBin), 2) + pow(hitqerr, 2)));
       if (QSumCut > QSumCutValue)
       {
         hLifeQCutRun->SetBinContent(hitBin, hLifeQCutRun->GetBinContent(hitBin) + hitq);
@@ -514,11 +591,27 @@ TBReader::TBReader(Int_t runstart, Int_t runstop)
       }
     }
 
-    ntEvent->Fill(float(entry), bEvent->maxBin, bEvent->maxVal, float(bEvent->run), float(bRun->goodTrigger), float(bEvent->hits.size()), float(bEvent->muVmax), float(QSumCut));
+    ntEvent->Fill(float(entry), bEvent->maxBin, bEvent->maxVal, float(bEvent->run), float(bRun->goodTrigger), float(bEvent->hits.size()), float(bEvent->totQ), float(bEvent->totHit));
   }
   // run landau fit for last run
   newRun();
   //fout->ls();
+  // normalize
+  double xbin;
+  double ebin;
+  for (int jset = 0; jset < MAXSETS; ++jset)
+  {
+    printf("set %i events %i \n", jset, setEvents[jset]);
+    for (int ibin = 0; ibin < hLifeSet[jset]->GetNbinsX(); ++ibin)
+    {
+      xbin = hLifeSet[jset]->GetBinContent(ibin) / double(setEvents[jset]);
+      //ebin = hLifeSet[jset]->GetBinError(ibin) / sqrt(double(setEvents[jset]));
+      ebin = sqrt(xbin);
+      hLifeSet[jset]->SetBinContent(ibin, xbin);
+      hLifeSet[jset]->SetBinError(ibin, ebin);
+    }
+  }
+
   fout->Write();
 
   return;

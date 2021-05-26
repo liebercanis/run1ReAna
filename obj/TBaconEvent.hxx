@@ -27,6 +27,7 @@ public:
   Int_t npmt;
   Int_t nspe;
   Double_t totQ;
+  Double_t totHit;
   Double_t spe;
   Double_t F40;
   Double_t muVmax;
@@ -34,7 +35,6 @@ public:
   Int_t maxBin;
   //
   Double_t T0;
-  Double_t totalCharge;
   Double_t tMax;
   Double_t vMax;
   Double_t cMax;
@@ -42,6 +42,6 @@ public:
   Double_t sDev;
 
   std::vector<TPulse> hits;
-  ClassDef(TBaconEvent, 4)
+  ClassDef(TBaconEvent, 5)
 };
 #endif

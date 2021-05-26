@@ -16,12 +16,12 @@ void TBaconEvent::clear()
   npulse = 0;
   nspe = 0;
   totQ = 0;
+  totHit = 0;
   spe = 0;
   F40 = 0;
   muVmax = 0;
   //
   T0 = 0;
-  totalCharge = 0;
   tMax = 0;
   vMax = 0;
   cMax = 0;

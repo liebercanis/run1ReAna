@@ -179,6 +179,8 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
   bEvent = new TBaconEvent();
   tbTree->Branch("bevent", &bEvent);
 
+  hMaxVal = new TH1D("MaxVal", " max value in event ", 1000, -2., 0);
+
   /** from pmtSim **/
   ntuplePulse = new TNtuple("ntuplePulse", "ntuplePulse", "ientry:pmtNum:nhits:charge:startTime:peakWidth:T0:V0:C0:vMax:vMaxTime");
   //TNtuple *ntupleEvent = new TNtuple("ntupleEvent","ntupleEvent","irun:ientry:pmtNum:Sdev:baseline:integral:deltaT:deltaV:vMax:tMax");
@@ -218,13 +220,13 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
 
     if (ientry == 0)
     {
-      printf(" .... events %lld samples %i PMT0 %zu PMT1 %zu \n", pmtTree->GetEntries(), nSamples, pmtEvent->volt1.size(), pmtEvent->volt2.size());
+      printf(" .... events %lld samples %i PMT0 %zu PMT1 %zu \n", ientry, nSamples, pmtEvent->volt1.size(), pmtEvent->volt2.size());
       // initialize fft
       fFFT = TVirtualFFT::FFT(1, &nSamples, "R2C M K");
       fInverseFFT = TVirtualFFT::FFT(1, &nSamples, "C2R M K");
     }
     if (ientry % 100 == 0)
-      cout << "\t \t .... " << ientry << " events" << endl;
+      cout << "\t \t .... " << ientry << " events good " << nGoodEvents << endl;
 
     gotPMT = 0;
     if (pmtEvent->volt1.size() > 0)
@@ -286,6 +288,8 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
 
     /* do analysis here */
     anaEntry(ientry);
+    if (!goodEvent)
+      continue;
     fillBaconEvent(ientry);
     // save/clone  event histograms
     if (eventsSaved < maxEventsSaved)
@@ -316,7 +320,7 @@ anaPulses::anaPulses(TString tag, Int_t maxEvents)
 
   printf(" END RUN %s  %lld pulses %lld \n", tag.Data(), nentries, ntuplePulse->GetEntries());
   printf(" pulse norm first %i late %i  \n", pulseFirstShapeNorm[0], pulseShapeNorm[0]);
-  printf(" events %i saved \n ", eventsSaved);
+  printf(" good events %i saved events %i saved \n ", nGoodEvents, eventsSaved);
   delete hPulseOne;
   for (int ipmt = 0; ipmt < gotPMT; ++ipmt)
   {
@@ -353,10 +357,10 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
   bEvent->maxBin = maxBin;
   bEvent->event = ientry;
   bEvent->run = atoi(theTag(theTag.Last('_') + 1, theTag.Length() - theTag.Last('_')).Data());
-  bEvent->npmt = 1;
+  bEvent->npmt = jpmt;
   bEvent->totQ = pmtRun->totalCharge[jpmt];
   bEvent->T0 = pmtRun->T0[jpmt];
-  bEvent->totalCharge = pmtRun->totalCharge[jpmt];
+  bEvent->totQ = pmtRun->totalCharge[jpmt];
   bEvent->tMax = pmtRun->tMax[jpmt];
   bEvent->vMax = pmtRun->vMax[jpmt];
   bEvent->cMax = pmtRun->cMax[jpmt];
@@ -378,6 +382,7 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
   }
 
   // fill puleses
+  double totHit = 0;
   for (int ip = 0; ip < nPulses; ip++)
   {
     Double_t charge = pmtRun->charge[jpmt][ip];
@@ -394,6 +399,7 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
     thePulse.pwidth = peakWidth;
     thePulse.peak = peakHeight;
     thePulse.q = charge;
+    totHit += charge;
     int pLength = 100; // add a bit to each end of pulse
     //thePulse.qerr=phitQErr;
     if (thePulse.iend - thePulse.istart < 1)
@@ -498,9 +504,9 @@ void anaPulses::fillBaconEvent(Long64_t ientry)
         hPulseFirstSum[jpmt]->SetBinContent(pbin, hPulseFirstSum[jpmt]->GetBinContent(pbin) + val);
       }
     } // end do pulse
-
     // add the pulse
     bEvent->hits.push_back(thePulse);
+    bEvent->totHit = totHit;
   } // end pulse loop
   tbTree->Fill();
 }
@@ -514,6 +520,21 @@ void anaPulses::anaEntry(Long64_t ientry)
   integral.resize(derivative.size());
   signal[0] = pmtEvent->volt1;
 
+  double totalCharge = 0;
+  /*** do deconvolution here ****/
+  std::vector<Double_t> deconWave = decon(signal[0]);
+  for (int i = 0; i < deconWave.size(); i++)
+  {
+    hWaveRawOne[0]->SetBinContent(i + 1, signal[0][i]);
+    hWaveOne[0]->SetBinContent(i + 1, deconWave[i]);
+    totalCharge += deconWave[i];
+  }
+
+  /*** use the decon wave ****/
+  signal[0] = deconWave;
+
+  int runNumber = atoi(theTag(theTag.Last('_') + 1, theTag.Length() - theTag.Last('_')).Data());
+
   /** find max bin **/
   maxVal = 0;
   maxBin = 0;
@@ -525,6 +546,15 @@ void anaPulses::anaEntry(Long64_t ientry)
       maxBin = ib;
     }
   }
+  hMaxVal->Fill(maxVal);
+  goodEvent = true;
+  if (runNumber < 20200 && maxVal < -0.8)
+    goodEvent = false;
+  if (runNumber >= 20200 && maxVal < -1.69)
+    goodEvent = false;
+  //if (!goodEvent) return;
+
+  ++nGoodEvents;
 
   deltaT = pmtEvent->time[1] - pmtEvent->time[0];
   if (ientry == 0)
@@ -540,22 +570,6 @@ void anaPulses::anaEntry(Long64_t ientry)
   pmtRun->resize();
   //if(ientry > 99) break;
   peakFindingDebug = false;
-  /*
-    //TCanvas * c0 = new TCanvas("Signal","Signal");
-    //c0->cd();
-    Int_t skipBin = 21;//4212;
-    if( ientry == skipBin+1){
-      if(eventInfo != NULL)
-        eventInfo->Write();
-      break;
-    }
-    peakFindingDebug = true;
-    NHistograms = skipBin;
-    //if(skipBin < ientry ) break;
-    if( skipBin != ientry) continue;
-    hSum[0] = new TH1D(TString("Sum_")+to_string(0),"",nSamples,pmtEvent->time[0],pmtEvent->time[nSamples-1]);
-    hSumFresh[0] = new TH1D(TString("SumVirgin_")+to_string(0),"",nSamples,pmtEvent->time[0],pmtEvent->time[nSamples-1]);
-    */
 
   Int_t nInt = 1;
   Double_t sum = 0;
@@ -756,7 +770,7 @@ void anaPulses::anaEntry(Long64_t ientry)
     if (peakTime[j].empty())
       continue;
     Double_t T0 = 0, V0 = 0, C0 = 0;
-    Double_t nFound = 0, nMiss = 0, nNoise = 0, totalCharge = 0;
+    Double_t nFound = 0, nMiss = 0, nNoise = 0;
     if (peakFindingDebug)
       cout << "entry " << ientry << endl;
     for (int i = 0; i < peakTime[j].size() - 1; i += 2)
@@ -795,7 +809,7 @@ void anaPulses::anaEntry(Long64_t ientry)
       }
       ntuplePulse->Fill(ientry, j, peakTime[j].size() / 2, -charge * deltaT, startTime, peakWidth, T0, V0, C0, -vMax, vMaxTime);
 
-      pmtRun->charge[j].push_back(-charge * deltaT);
+      pmtRun->charge[j].push_back(-charge);
       pmtRun->startTimes[j].push_back(startTime);
       pmtRun->peakWidths[j].push_back(peakWidth);
       pmtRun->peakHeights[j].push_back(-vMax);
@@ -809,29 +823,22 @@ void anaPulses::anaEntry(Long64_t ientry)
         cMaxEvent = cMax * deltaT;
       }
 
-      bool doPulse = true;
-      int pmtNum = j;
-      std::vector<double> digi = pmtEvent->volt1;
-      int ndigi = digi.size();
-      /*** do deconvolution here ****/
-      std::vector<Double_t> deconWave = decon(signal[j]);
-      for (int i = 0; i < deconWave.size(); i++)
-      {
-        hWaveRawOne[j]->SetBinContent(i + 1, signal[j][i]);
-        hWaveOne[j]->SetBinContent(i + 1, deconWave[i]);
-      }
+      //bool doPulse = true;
+      //int pmtNum = j;
+      //std::vector<double> digi = pmtEvent->volt1;
+      //int ndigi = digi.size();
     }
     //end of pmtNum loop
     sTitle += TString("tMax_") + to_string(tMaxEvent * 1e6) + TString("_vMax_") + to_string(vMaxEvent) + TString("_totalCharge_") + to_string(totalCharge);
 
     if (peakFindingDebug)
       cout << "Filling data ntupleEvent" << endl;
-    ntupleEvent->Fill(0, ientry, j, Sdev, baseline, -sum, deltaT, tMaxEvent, -vMaxEvent, -cMaxEvent, -totalCharge * deltaT, 0, peakTime[j].size() / 2.); //-vMaxEvent,tMaxEvent);
+    ntupleEvent->Fill(0, ientry, j, Sdev, baseline, -sum, deltaT, tMaxEvent, -vMaxEvent, -cMaxEvent, -totalCharge, peakTime[j].size() / 2.); //-vMaxEvent,tMaxEvent);
     if (peakFindingDebug)
       cout << "Filling pmtRun class" << endl;
 
     pmtRun->T0[j] = T0;
-    pmtRun->totalCharge[j] = -totalCharge * deltaT;
+    pmtRun->totalCharge[j] = -totalCharge;
     pmtRun->tMax[j] = tMaxEvent;
     pmtRun->vMax[j] = -vMaxEvent;
     pmtRun->cMax[j] = -cMaxEvent;
