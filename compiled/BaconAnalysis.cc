@@ -226,7 +226,7 @@ void BaconAnalysis(int maxFiles ){
 
   const char *inDir = "/data1/bacon/rootData/DS2";
 
-  TFile *fout = new TFile(Form("BaconAnalysisCut-%i.root",maxFiles),"recreate");
+  TFile *fout = new TFile(Form("BaconAnalysisLowCut-%i.root",maxFiles),"recreate");
   TDirectory *qualDir = fout->mkdir("quality");
   TDirectory *waveDir = fout->mkdir("waveForms");
   fout->cd();
@@ -503,9 +503,9 @@ void BaconAnalysis(int maxFiles ){
       evPre[0] = filenumber;
       evPre[1] = runSet;
       evPre[2] = event_code;
-      evPre[3] = getSum(h_v1, singletStart * microToNano, double(nDigi));
-      evPre[4] = getSum(h_v1, singletStart * microToNano, singletEnd * microToNano);
-      evPre[5] = getSum(h_v1, singletEnd * microToNano, double(nDigi));
+      evPre[3] = getSum(h_v1, singletStart, double(nDigi));
+      evPre[4] = getSum(h_v1, singletStart , singletEnd);
+      evPre[5] = getSum(h_v1, singletEnd , double(nDigi));
       evPre[6] = vmaxPre;
       evPre[7] = maxTimePre;
       ntEvPre->Fill(evPre);
@@ -558,9 +558,9 @@ void BaconAnalysis(int maxFiles ){
       evVars[EVRUN] = filenumber;
       evVars[EVSET] = runSet;
       evVars[EVFLAG] = event_code;
-      evVars[EVSUM] = getSum(h_v1Fix, singletStart * microToNano, double(nDigi));
-      evVars[EVSINGLET] = getSum(h_v1Fix, singletStart * microToNano, singletEnd * microToNano);
-      evVars[EVTRIPLET] = getSum(h_v1Fix, singletEnd * microToNano, double(nDigi));
+      evVars[EVSUM] = getSum(h_v1Fix, singletStart , double(nDigi));
+      evVars[EVSINGLET] = getSum(h_v1Fix, singletStart, singletEnd);
+      evVars[EVTRIPLET] = getSum(h_v1Fix, singletEnd , double(nDigi));
       evVars[EVLATE] = vmax;
       evVars[EVLATETIME] = maxTime;
       evVars[EVWFSINGLET] = wf_singlet;
@@ -568,8 +568,14 @@ void BaconAnalysis(int maxFiles ){
 
       ntEvent->Fill(evVars);
 
-      if (evVars[EVSINGLET]<singleCut[runSet])
+      if (-1.0*evVars[EVSINGLET]<singleCut[runSet])
         continue;
+
+      /*
+      waveDir->cd();
+      TH1D *hFixCut = (TH1D *)h_v1Fix->Clone(Form("FixCutEv%iRun%i",j, filenumber));
+      fout->cd();
+      */
 
       // shift trigger times
       // align all the trigger times
@@ -728,6 +734,9 @@ void BaconAnalysis(int maxFiles ){
     f->Close();
     auto end = chrono::steady_clock::now();
     cout << " \t finished " << filenumber << " after " << chrono::duration_cast<chrono::seconds>(end - start).count() << " sec events " << nentries << " good " << nrungood << endl;
+
+    printf("\t  singlet %f doublet %f triplet %f \n ", sumVars[ESINGLET], sumVars[EDOUBLET], sumVars[ETRIPLET]);
+
     //if(i>10) break;
   } // end file loop 
 
