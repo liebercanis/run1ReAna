@@ -1,4 +1,3 @@
-#include "TFile.h"
 #include "TTree.h"
 #include "TChain.h"
 #include "TString.h"
@@ -55,10 +54,6 @@ int rejectEvent(){
     event_code += 1; //skip saturated events
     rejectBits.set(0);
     h_runqualityB->Fill(1);
-<<<<<<< HEAD
-=======
-    //printf("... sat %f \n",bin_a);
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
   }
   ///////////////////////////
   baseline_mean = h_v1histobaseline->GetMean();
@@ -167,11 +162,7 @@ double getSum(TH1D *h, double start, double end )
   for (int ibin = istart; ibin < iend; ++ibin) {
     sum += h->GetBinContent(ibin);
   }
-<<<<<<< HEAD
   return sum;
-=======
-  return -1.0*sum;
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
 }
 
 double afterPulsing(TH1D *h, int i1, int i2, int j)
@@ -196,7 +187,6 @@ double afterPulsing(TH1D *h, int i1, int i2, int j)
 }
 
 void afterFix(TH1D *h, TH1D* hFix ) {
-<<<<<<< HEAD
   TH1D *hTemp  = (TH1D *) h->Clone(Form("h%s-temp",h->GetName()));
   // shift trigger times
   // align all the trigger times
@@ -216,29 +206,13 @@ void afterFix(TH1D *h, TH1D* hFix ) {
   for (int ibin = 0; ibin < h->GetNbinsX(); ++ibin)
   {
     double val = hTemp->GetBinContent(ibin);
-=======
-  int ilow = h->FindBin(afterLow * 1.E3);
-  int ihigh = h->FindBin(afterHigh * 1.E3);
-  int ilow2 = h->FindBin(afterLow2 * 1.E3);
-  int ihigh2 = h->FindBin(afterHigh2 * 1.E3);
-
-  for (int ibin = 0; ibin < h->GetNbinsX(); ++ibin)
-  {
-    double val = h->GetBinContent(ibin);
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
     if (ibin >= ilow && ibin <= ihigh)
       val = afterPulsing(h, ilow, ihigh, ibin);
     if (ibin >= ilow2 && ibin <= ihigh2)
       val = afterPulsing(h, ilow2, ihigh2, ibin);
     hFix->SetBinContent(ibin, val );
-<<<<<<< HEAD
-    hFix->SetBinError(ibin,  hTemp->GetBinError(ibin) );
-  }
-  delete hTemp;
-=======
     hFix->SetBinError(ibin,  h->GetBinError(ibin) );
   }
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
 }
 
 int currentSet = -1;
@@ -249,11 +223,7 @@ void BaconAnalysis(int maxFiles ){
   double microToNano = 1.0E3;
   auto start = chrono::steady_clock::now();
 
-<<<<<<< HEAD
   double singleCut[NSETS] = {4.,4.,4.,4.,4.,4.};
-=======
-  double singleCut[NSETS] = {1.,4.,4.,4.,4.,4.};
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
   cout<< " max files " << maxFiles << endl;
   printf(" single cuts are :\n");
   for (int iset = 0; iset < NSETS; ++iset)
@@ -265,16 +235,11 @@ void BaconAnalysis(int maxFiles ){
 
   const char *inDir = "/data1/bacon/rootData/DS2";
 
-<<<<<<< HEAD
   TFile *fout = new TFile(Form("BaconAnalysisHighCut-%i.root",maxFiles),"recreate");
   TDirectory *qualDir = fout->mkdir("quality");
   TDirectory *waveDir = fout->mkdir("waveForms");
   TDirectory *rejectDir = fout->mkdir("rejectWaveForms");
-=======
-  TFile *fout = new TFile(Form("BaconAnalysisLowCut-%i.root",maxFiles),"recreate");
-  TDirectory *qualDir = fout->mkdir("quality");
-  TDirectory *waveDir = fout->mkdir("waveForms");
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
+
   fout->cd();
 
   cout << inDir << endl;
@@ -302,19 +267,11 @@ void BaconAnalysis(int maxFiles ){
   cout << "---" << files.size() << " files " << endl;
   sort (files.begin(), files.end());
   //shuffle(files.begin(), files.end(), gen); //random runs for testing
-<<<<<<< HEAD
   /*cout << " list of files to run " << endl;
   for (unsigned j = 0; j < files.size(); ++j)
     printf("\t %i %s \n", j, files[j].Data());
     */
-=======
-  cout << " list of files to run " << endl;
-  for (unsigned j = 0; j < files.size(); ++j)
-    printf("\t %i %s \n", j, files[j].Data());
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
-
-    //////////////////////////////////////////////////////////////////////////
-    TString filename, f2;
+  TString filename, f2;
   int filenumber;
   int nentries;
   int ntotal = 0;
@@ -356,11 +313,7 @@ void BaconAnalysis(int maxFiles ){
   hCode = new TH1D("rejectCode","rejectCode",NBITS+1,0,NBITS+1);
   TNtuple *ntSummary = new TNtuple("Summary", " summary","run:set:base:baseend:accept:total:singlet:dublet:triplet:ngood:over");
   TNtuple *ntEvPre = new TNtuple("EvPre", " event ","run:set:flag:sum:singlet:triplet:late:latetime");
-<<<<<<< HEAD
-  TNtuple *ntEvent = new TNtuple("Event", " event ","ev:run:set:flag:sum:singlet:triplet:late:latetime:wfsinglet:wfmin");
-=======
   TNtuple *ntEvent = new TNtuple("Event", " event ","run:set:flag:sum:singlet:triplet:late:latetime:wfsinglet:wfmin");
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
   TH1D* h_acceptance = new TH1D("h_acceptance","h_acceptance",files.size(),0,files.size());
   TH1D* h_Triplet = new TH1D("h_Triplet","h_Triplet",files.size(),0,files.size());
   TH1D* h_Dublet = new TH1D("h_Dublet","h_Dublet",files.size(),0,files.size());
@@ -395,10 +348,7 @@ void BaconAnalysis(int maxFiles ){
   int nDigi = 0;
   for (int i = 0; i < int(files.size()); i++)
   {
-<<<<<<< HEAD
     int rejectSaved = 0;
-=======
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
     filename = files[i];
     f2 = filename(filename.First("_")+1,filename.Length());
     f2 = f2(0, f2.Length() - f2.First("_") - 2);
@@ -551,7 +501,6 @@ void BaconAnalysis(int maxFiles ){
       }
       // start cuts
       int event_code = rejectEvent();
-<<<<<<< HEAD
       std::string mystring;
       if (j % 1000 == 0)
       {
@@ -569,14 +518,6 @@ void BaconAnalysis(int maxFiles ){
         //printf(" clone %s total %i \n", hTemp->GetName(), rejectSaved);
       }
 
-=======
-      if (j % 1000 == 0){
-        printf("... %i hex code %X ", j, event_code);
-        std::string mystring =
-          rejectBits.to_string<char, std::string::traits_type, std::string::allocator_type>();
-          std::cout << "bits  " << mystring << '\n';
-      }
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
       float evPre[8];
       double vmaxPre = 0;
       double maxTimePre = getMaxTime(h_v1, singletEnd, vmaxPre);
@@ -631,16 +572,11 @@ void BaconAnalysis(int maxFiles ){
 
       }
 
-<<<<<<< HEAD
       // align wavforms to time = 1000 ns and fix after pulsing
-=======
-      // fix after pulsing
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
       afterFix(h_v1b, h_v1Fix);
       double vmax = 0;
       double maxTime = getMaxTime(h_v1Fix, singletEnd, vmax);
       // fill evvars
-<<<<<<< HEAD
       evVars[EVEVENT] = float(j);
       evVars[EVRUN] = filenumber;
       evVars[EVSET] = runSet;
@@ -648,20 +584,11 @@ void BaconAnalysis(int maxFiles ){
       evVars[EVSUM] = getSum(h_v1Fix, singletStart*microToNano , double(nDigi));
       evVars[EVSINGLET] = getSum(h_v1Fix, singletStart*microToNano, singletEnd*microToNano);
       evVars[EVTRIPLET] = getSum(h_v1Fix, singletEnd*microToNano , double(nDigi));
-=======
-      evVars[EVRUN] = filenumber;
-      evVars[EVSET] = runSet;
-      evVars[EVFLAG] = event_code;
-      evVars[EVSUM] = getSum(h_v1Fix, singletStart , double(nDigi));
-      evVars[EVSINGLET] = getSum(h_v1Fix, singletStart, singletEnd);
-      evVars[EVTRIPLET] = getSum(h_v1Fix, singletEnd , double(nDigi));
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
       evVars[EVLATE] = vmax;
       evVars[EVLATETIME] = maxTime;
       evVars[EVWFSINGLET] = wf_singlet;
       evVars[EVWFMIN] = wf_min;
 
-<<<<<<< HEAD
       //printf(" ev %i run %i singlet %f triplet %f \n", int(evVars[EVEVENT]),int(evVars[EVRUN]), evVars[EVSINGLET] , evVars[EVTRIPLET]);
       
       ntEvent->Fill(evVars);
@@ -678,32 +605,7 @@ void BaconAnalysis(int maxFiles ){
       if (wf_singlet <= 15)
           h_runqualityB->Fill(6);
       else
-=======
-      ntEvent->Fill(evVars);
 
-      if (-1.0*evVars[EVSINGLET]<singleCut[runSet])
-        continue;
-
-      /*
-      waveDir->cd();
-      TH1D *hFixCut = (TH1D *)h_v1Fix->Clone(Form("FixCutEv%iRun%i",j, filenumber));
-      fout->cd();
-      */
-
-      // shift trigger times
-      // align all the trigger times
-      int maxBin = h_v1Fix->GetMaximumBin();
-      int startBin = h_v1Fix->FindBin(1.0E3);
-      for (int k = 0; k < m; k++)
-      {
-        int jBin = k - maxBin + startBin;
-        hWave[currentSet]->SetBinContent(jBin, hWave[currentSet]->GetBinContent(jBin) + h_v1Fix->GetBinContent(k));
-      }
-
-        if (wf_singlet <= 15)
-          h_runqualityB->Fill(6);
-        else
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
         {
           h_wf_integral->Fill(i, h_v1c->Integral());
           h_wf_max->Fill(i, h_v1b->GetMaximum());
@@ -772,11 +674,6 @@ void BaconAnalysis(int maxFiles ){
           //cout << " " << h_runqualityhistoS->GetMean() <<" " << h_runqualityhistoS->GetRMS() << endl;
           //cin.get();
         }
-
-<<<<<<< HEAD
-=======
-        
->>>>>>> 600f0f18eb185b6e3a9b38f4568d5cd1578c501f
 
     } // end of event loop
 
