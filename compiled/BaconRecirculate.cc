@@ -1,3 +1,4 @@
+#include "TFile.h"
 #include "TTree.h"
 #include "TChain.h"
 #include "TString.h"
@@ -8,8 +9,6 @@
 #include "TProof.h"
 #include "TFile.h"
 #include "TParameter.h"
-#include "TPmtEvent.cxx"
-#include "BaconAnalysis.hh"
 
 #include <iostream>
 #include <string>
@@ -19,6 +18,8 @@
 #include <algorithm>
 #include <bitset>
 
+#include "TPmtEvent.cxx"
+#include "BaconAnalysis.hh"
 
 using namespace std;
 mt19937 gen( chrono::system_clock::now().time_since_epoch().count() );
@@ -110,11 +111,11 @@ enum
 int getRunSet(int irun)
 {
   int iset = -1;
-  if (irun >= 3000 && irun <= 3020)
-  //if (irun >= 3000 && irun <= 5700)
-  {
-    //irun = irun - 3000 + 20000 - 20;
-    iset = 0;
+  if (irun >= 2500 && irun <= 5700 && !(irun > 5160 && irun < 5250) && !(irun > 3900 && irun < 4100))
+    //if (irun >= 3000 && irun <= 5700)
+    {
+      //irun = irun - 3000 + 20000 - 20;
+      iset = 0;
   }
   if (irun >= 20005 && irun < 20020)
     iset = 1;
@@ -188,20 +189,12 @@ double afterPulsing(TH1D *h, int i1, int i2, int j)
 
 void afterFix(TH1D *h, TH1D* hFix ) {
   TH1D *hTemp  = (TH1D *) h->Clone(Form("h%s-temp",h->GetName()));
-<<<<<<< HEAD
-  hTemp->SetDirectory(0);
-=======
->>>>>>> ad97c1d945828312f4c52be34216249877ca6650
   // shift trigger times
   // align all the trigger times
   int maxBin = h->GetMaximumBin();
   int startBin = h->FindBin(1.0E3);
   for (int k = 0; k < h->GetNbinsX(); k++) {
     int jBin = k - maxBin + startBin;
-<<<<<<< HEAD
-    // baseline subtraction
-=======
->>>>>>> ad97c1d945828312f4c52be34216249877ca6650
     hTemp->SetBinContent(jBin, h->GetBinContent(k));
     hTemp->SetBinError(jBin, h->GetBinError(k));
   }
@@ -219,14 +212,15 @@ void afterFix(TH1D *h, TH1D* hFix ) {
     if (ibin >= ilow2 && ibin <= ihigh2)
       val = afterPulsing(h, ilow2, ihigh2, ibin);
     hFix->SetBinContent(ibin, val );
-    hFix->SetBinError(ibin,  h->GetBinError(ibin) );
+    hFix->SetBinError(ibin,  hTemp->GetBinError(ibin) );
   }
+  delete hTemp;
 }
 
 int currentSet = -1;
 int currentRun = -1;
 //////////////////////////////////////////////////////////////////////////
-void BaconAnalysis(int maxFiles ){
+void BaconRecirculate(int maxFiles = 10000 ){
   
   double microToNano = 1.0E3;
   auto start = chrono::steady_clock::now();
@@ -243,11 +237,10 @@ void BaconAnalysis(int maxFiles ){
 
   const char *inDir = "/data1/bacon/rootData/DS2";
 
-  TFile *fout = new TFile(Form("BaconAnalysisHighCut-%i.root",maxFiles),"recreate");
+  TFile *fout = new TFile(Form("BaconAnalysisHighCutAll-%i.root",maxFiles),"recreate");
   TDirectory *qualDir = fout->mkdir("quality");
   TDirectory *waveDir = fout->mkdir("waveForms");
   TDirectory *rejectDir = fout->mkdir("rejectWaveForms");
-
   fout->cd();
 
   cout << inDir << endl;
@@ -275,15 +268,13 @@ void BaconAnalysis(int maxFiles ){
   cout << "---" << files.size() << " files " << endl;
   sort (files.begin(), files.end());
   //shuffle(files.begin(), files.end(), gen); //random runs for testing
-<<<<<<< HEAD
-  printf("--- from %s to %s  \n", files[0].Data(), files[files.size()-1].Data());
-=======
-  /*cout << " list of files to run " << endl;
+  cout << " list of files to run " << endl;
   for (unsigned j = 0; j < files.size(); ++j)
     printf("\t %i %s \n", j, files[j].Data());
-    */
->>>>>>> ad97c1d945828312f4c52be34216249877ca6650
-  TString filename, f2;
+
+
+    //////////////////////////////////////////////////////////////////////////
+    TString filename, f2;
   int filenumber;
   int nentries;
   int ntotal = 0;
@@ -323,9 +314,9 @@ void BaconAnalysis(int maxFiles ){
   h_v1histobaselineend = new TH1D("h_v1histobaselineend","h_v1histobaselineend",5000,-5,5);
 
   hCode = new TH1D("rejectCode","rejectCode",NBITS+1,0,NBITS+1);
-  TNtuple *ntSummary = new TNtuple("Summary", " summary","run:set:base:baseend:accept:total:singlet:dublet:triplet:ngood:over:minbase");
+  TNtuple *ntSummary = new TNtuple("Summary", " summary","run:set:base:baseend:accept:total:singlet:dublet:triplet:ngood:over");
   TNtuple *ntEvPre = new TNtuple("EvPre", " event ","run:set:flag:sum:singlet:triplet:late:latetime");
-  TNtuple *ntEvent = new TNtuple("Event", " event ","run:set:flag:sum:singlet:triplet:late:latetime:wfsinglet:wfmin");
+  TNtuple *ntEvent = new TNtuple("Event", " event ","ev:run:set:flag:sum:singlet:triplet:late:latetime:wfsinglet:wfmin");
   TH1D* h_acceptance = new TH1D("h_acceptance","h_acceptance",files.size(),0,files.size());
   TH1D* h_Triplet = new TH1D("h_Triplet","h_Triplet",files.size(),0,files.size());
   TH1D* h_Dublet = new TH1D("h_Dublet","h_Dublet",files.size(),0,files.size());
@@ -372,9 +363,10 @@ void BaconAnalysis(int maxFiles ){
     cout << "----" << i << " : " << filename;
     cout << " -- " << filenumber << " set " << runSet << endl;
     
-    skipfile = false;
+    //skipfile = false;
+    //  skipfile = true;
     if(runSet<0)
-      skipfile = true;
+      continue;
 
     //if((filenumber>=3000) && (filenumber<=3020)) skipfile = false;
     /*if((filenumber>=5580) && (filenumber<=5600)) skipfile = false;
@@ -385,10 +377,10 @@ void BaconAnalysis(int maxFiles ){
     if((filenumber>=20220) && (filenumber<=20222)) skipfile = false;
     */
                 
-    if(skipfile){
-      cout << " -- " << filenumber << " skipped !" << endl;
-      continue; 
-    }
+    //if(skipfile){
+    //  cout << " -- " << filenumber << " skipped !" << endl;
+    //  continue; 
+    //}
 
     if (nFilesRead  >= maxFiles)
       break;
@@ -417,7 +409,7 @@ void BaconAnalysis(int maxFiles ){
     nDigi = oneEvent->time.size();
     time_a = oneEvent->time.at(0)*1.E6;
     time_b = oneEvent->time.at(nDigi- 1)*1.E6;
-    cout << "\t *********  starting run " << filename << " set  " << runSet << " entries =  " << nentries 
+    cout << "\t starting run " << filename << " set  " << runSet << " entries =  " << nentries 
       << " ndigi " << nDigi << " time_a " << time_a << " time_b " << time_b << endl;
     if (runSet != currentSet) {
       currentSet = runSet;
@@ -457,10 +449,6 @@ void BaconAnalysis(int maxFiles ){
       h_runqualityR = new TH1D(hname, hname, 200, 0, 100);
       hname.Form("runqualityB-%i", filenumber);
       h_runqualityB = new TH1D(hname, hname, 20, 0, 20);
-      TH1D *h_minimumRun = (TH1D *)h_minimum->Clone(Form("MinimumRun%i",currentRun) );
-      TH1D *h_maximumRun = (TH1D *)h_maximum->Clone(Form("MaximumRun%i",currentRun) );
-      waveDir->Append(h_minimumRun);
-      waveDir->Append(h_maximumRun);
       h_minimum->Reset("ICESM");
       h_maximum->Reset("ICESM");
       h_mean->Reset("ICESM");
@@ -501,7 +489,7 @@ void BaconAnalysis(int maxFiles ){
 
       
       ///loop ver wf, set v1, fill the histo for baseline etc
-      if(j%1000==0) cout << " first loop   " << j << endl;
+      if(j%1000==0) cout << " first loop   " << j << " set " << currentSet << endl;
       for(int k = 0;k<m;k++){
         h_v1->SetBinContent(k,oneEvent->volt1.at(k));
         h_v1histo->Fill(oneEvent->volt1.at(k));
@@ -523,29 +511,18 @@ void BaconAnalysis(int maxFiles ){
         printf("... %i hex code %X ", j, event_code);
         mystring = rejectBits.to_string<char, std::string::traits_type, std::string::allocator_type>();
         std::cout << " bits  " << mystring << '\n';
-<<<<<<< HEAD
-      }
-      // save some reject examples
-      if (event_code > 0 && rejectSaved< 1)
-      {
-        mystring = rejectBits.to_string<char, std::string::traits_type, std::string::allocator_type>();
-        TH1D *hTemp = (TH1D *)h_v1->Clone(Form("run-%i-ev-%i-bits-%s",filenumber,j,mystring.c_str()));
-        rejectDir->Append(hTemp);
-        ++rejectSaved;
-        printf(" clone %s total %i \n", hTemp->GetName(), rejectSaved);
-      }
-=======
       }
       // save some reject examples
       if (event_code > 0 && rejectSaved< 10)
       {
         mystring = rejectBits.to_string<char, std::string::traits_type, std::string::allocator_type>();
-        TH1D *hTemp = (TH1D *)h_v1->Clone(Form("run-%i-ev-%i-bits-%s",filenumber,j,mystring.c_str()));
-        rejectDir->Append(hTemp);
-        ++rejectSaved;
+        rejectDir->cd();
+        TH1D *hTemp = (TH1D *)h_v1->Clone(Form("run-%i-ev-%i-bits-%s", filenumber, j, mystring.c_str()));
+        fout->cd();
+        //rejectDir->Append(hTemp);
+        ++ rejectSaved;
         //printf(" clone %s total %i \n", hTemp->GetName(), rejectSaved);
       }
->>>>>>> ad97c1d945828312f4c52be34216249877ca6650
 
       float evPre[8];
       double vmaxPre = 0;
@@ -634,7 +611,6 @@ void BaconAnalysis(int maxFiles ){
       if (wf_singlet <= 15)
           h_runqualityB->Fill(6);
       else
-
         {
           h_wf_integral->Fill(i, h_v1c->Integral());
           h_wf_max->Fill(i, h_v1b->GetMaximum());
@@ -704,9 +680,10 @@ void BaconAnalysis(int maxFiles ){
           //cin.get();
         }
 
+
     } // end of event loop
 
-    min_baseline=0;
+    
     if(nrungood){
       h_mean->Scale(1.0/nrungood);  
       min_baseline=h_minimum->Integral(wf_width+1,900);
@@ -771,23 +748,17 @@ void BaconAnalysis(int maxFiles ){
     sumVars[EDOUBLET] = h_Dublet->GetBinContent(i);
     sumVars[ETRIPLET] = h_Triplet->GetBinContent(i);
     sumVars[ETOTAL] = h_Total->GetBinContent(i);
-    sumVars[NTOTAL] = ntotal;
     sumVars[NGOOD] = nrungood;
-    sumVars[OVERSHOOT] = h_minimum->Integral(1100, 10000);
-    sumVars[EMINBASE] = min_baseline;
+    sumVars[OVERSHOOT] = h_minimum->Integral(1100,10000);
     ntSummary->Fill(sumVars);
     f->Close();
-    //
     auto end = chrono::steady_clock::now();
-    cout << " \t finished " << filenumber << " after " 
-      << chrono::duration_cast<chrono::seconds>(end - start).count() 
-      << " sec events " << nentries << " good " 
-      << nrungood << endl;
+    cout << " \t finished " << filenumber << " after " << chrono::duration_cast<chrono::seconds>(end - start).count() << " sec events " << nentries << " good " << nrungood << endl;
 
     printf("\t  singlet %f doublet %f triplet %f \n ", sumVars[ESINGLET], sumVars[EDOUBLET], sumVars[ETRIPLET]);
 
     //if(i>10) break;
-  } // end file loop
+  } // end file loop 
 
   cout << " Total Files " << nFilesRead << endl;
   cout << " Total Events " << ntotal << endl;
