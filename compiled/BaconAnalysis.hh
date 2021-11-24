@@ -1,7 +1,7 @@
 
 enum
 {
-    SUMVARS = 12
+    SUMVARS = 13
 };
 
 enum
@@ -15,6 +15,7 @@ enum
     ESINGLET,
     EDOUBLET,
     ETRIPLET,
+    NTOT,
     NGOOD,
     OVERSHOOT,
     EMINBASE

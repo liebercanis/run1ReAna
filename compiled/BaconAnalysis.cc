@@ -310,7 +310,7 @@ void BaconAnalysis(int maxFiles ){
   h_v1histobaselineend = new TH1D("h_v1histobaselineend","h_v1histobaselineend",5000,-5,5);
 
   hCode = new TH1D("rejectCode","rejectCode",NBITS+1,0,NBITS+1);
-  TNtuple *ntSummary = new TNtuple("Summary", " summary","run:set:base:baseend:accept:total:singlet:dublet:triplet:ngood:over:minbase");
+  TNtuple *ntSummary = new TNtuple("Summary", " summary","run:set:base:baseend:accept:total:singlet:dublet:triplet:ntot:ngood:over:minbase");
   TNtuple *ntEvPre = new TNtuple("EvPre", " event ","run:set:flag:sum:singlet:triplet:late:latetime");
   TNtuple *ntEvent = new TNtuple("Event", " event ","run:set:flag:sum:singlet:triplet:late:latetime:wfsinglet:wfmin");
   TH1D* h_acceptance = new TH1D("h_acceptance","h_acceptance",files.size(),0,files.size());
@@ -745,6 +745,7 @@ void BaconAnalysis(int maxFiles ){
     sumVars[EDOUBLET] = h_Dublet->GetBinContent(i);
     sumVars[ETRIPLET] = h_Triplet->GetBinContent(i);
     sumVars[ETOTAL] = h_Total->GetBinContent(i);
+    sumVars[NTOT] = ntotal;
     sumVars[NGOOD] = nrungood;
     sumVars[OVERSHOOT] = h_minimum->Integral(1100, 10000);
     sumVars[EMINBASE] = min_baseline;
