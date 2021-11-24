@@ -1,4 +1,3 @@
-#include "TFile.h"
 #include "TTree.h"
 #include "TChain.h"
 #include "TString.h"
@@ -9,6 +8,8 @@
 #include "TProof.h"
 #include "TFile.h"
 #include "TParameter.h"
+#include "TPmtEvent.cxx"
+#include "BaconAnalysis.hh"
 
 #include <iostream>
 #include <string>
@@ -18,8 +19,6 @@
 #include <algorithm>
 #include <bitset>
 
-#include "TPmtEvent.cxx"
-#include "BaconAnalysis.hh"
 
 using namespace std;
 mt19937 gen( chrono::system_clock::now().time_since_epoch().count() );
@@ -55,7 +54,6 @@ int rejectEvent(){
     event_code += 1; //skip saturated events
     rejectBits.set(0);
     h_runqualityB->Fill(1);
-    //printf("... sat %f \n",bin_a);
   }
   ///////////////////////////
   baseline_mean = h_v1histobaseline->GetMean();
@@ -164,7 +162,7 @@ double getSum(TH1D *h, double start, double end )
   for (int ibin = istart; ibin < iend; ++ibin) {
     sum += h->GetBinContent(ibin);
   }
-  return -1.0*sum;
+  return sum;
 }
 
 double afterPulsing(TH1D *h, int i1, int i2, int j)
@@ -189,14 +187,27 @@ double afterPulsing(TH1D *h, int i1, int i2, int j)
 }
 
 void afterFix(TH1D *h, TH1D* hFix ) {
-  int ilow = h->FindBin(afterLow * 1.E3);
-  int ihigh = h->FindBin(afterHigh * 1.E3);
-  int ilow2 = h->FindBin(afterLow2 * 1.E3);
-  int ihigh2 = h->FindBin(afterHigh2 * 1.E3);
+  TH1D *hTemp  = (TH1D *) h->Clone(Form("h%s-temp",h->GetName()));
+  hTemp->SetDirectory(0);
+  // shift trigger times
+  // align all the trigger times
+  int maxBin = h->GetMaximumBin();
+  int startBin = h->FindBin(1.0E3);
+  for (int k = 0; k < h->GetNbinsX(); k++) {
+    int jBin = k - maxBin + startBin;
+    // baseline subtraction
+    hTemp->SetBinContent(jBin, h->GetBinContent(k));
+    hTemp->SetBinError(jBin, h->GetBinError(k));
+  }
+
+  int ilow = hTemp->FindBin(afterLow * 1.E3);
+  int ihigh = hTemp->FindBin(afterHigh * 1.E3);
+  int ilow2 = hTemp->FindBin(afterLow2 * 1.E3);
+  int ihigh2 = hTemp->FindBin(afterHigh2 * 1.E3);
 
   for (int ibin = 0; ibin < h->GetNbinsX(); ++ibin)
   {
-    double val = h->GetBinContent(ibin);
+    double val = hTemp->GetBinContent(ibin);
     if (ibin >= ilow && ibin <= ihigh)
       val = afterPulsing(h, ilow, ihigh, ibin);
     if (ibin >= ilow2 && ibin <= ihigh2)
@@ -214,7 +225,7 @@ void BaconAnalysis(int maxFiles ){
   double microToNano = 1.0E3;
   auto start = chrono::steady_clock::now();
 
-  double singleCut[NSETS] = {1.,4.,4.,4.,4.,4.};
+  double singleCut[NSETS] = {4.,4.,4.,4.,4.,4.};
   cout<< " max files " << maxFiles << endl;
   printf(" single cuts are :\n");
   for (int iset = 0; iset < NSETS; ++iset)
@@ -226,9 +237,11 @@ void BaconAnalysis(int maxFiles ){
 
   const char *inDir = "/data1/bacon/rootData/DS2";
 
-  TFile *fout = new TFile(Form("BaconAnalysisLowCut-%i.root",maxFiles),"recreate");
+  TFile *fout = new TFile(Form("BaconAnalysisHighCut-%i.root",maxFiles),"recreate");
   TDirectory *qualDir = fout->mkdir("quality");
   TDirectory *waveDir = fout->mkdir("waveForms");
+  TDirectory *rejectDir = fout->mkdir("rejectWaveForms");
+
   fout->cd();
 
   cout << inDir << endl;
@@ -256,12 +269,8 @@ void BaconAnalysis(int maxFiles ){
   cout << "---" << files.size() << " files " << endl;
   sort (files.begin(), files.end());
   //shuffle(files.begin(), files.end(), gen); //random runs for testing
-  cout << " list of files to run " << endl;
-  for (unsigned j = 0; j < files.size(); ++j)
-    printf("\t %i %s \n", j, files[j].Data());
-
-    //////////////////////////////////////////////////////////////////////////
-    TString filename, f2;
+  printf("--- from %s to %s  \n", files[0].Data(), files[files.size()-1].Data());
+  TString filename, f2;
   int filenumber;
   int nentries;
   int ntotal = 0;
@@ -301,7 +310,7 @@ void BaconAnalysis(int maxFiles ){
   h_v1histobaselineend = new TH1D("h_v1histobaselineend","h_v1histobaselineend",5000,-5,5);
 
   hCode = new TH1D("rejectCode","rejectCode",NBITS+1,0,NBITS+1);
-  TNtuple *ntSummary = new TNtuple("Summary", " summary","run:set:base:baseend:accept:total:singlet:dublet:triplet:ngood:over");
+  TNtuple *ntSummary = new TNtuple("Summary", " summary","run:set:base:baseend:accept:total:singlet:dublet:triplet:ngood:over:minbase");
   TNtuple *ntEvPre = new TNtuple("EvPre", " event ","run:set:flag:sum:singlet:triplet:late:latetime");
   TNtuple *ntEvent = new TNtuple("Event", " event ","run:set:flag:sum:singlet:triplet:late:latetime:wfsinglet:wfmin");
   TH1D* h_acceptance = new TH1D("h_acceptance","h_acceptance",files.size(),0,files.size());
@@ -338,6 +347,7 @@ void BaconAnalysis(int maxFiles ){
   int nDigi = 0;
   for (int i = 0; i < int(files.size()); i++)
   {
+    int rejectSaved = 0;
     filename = files[i];
     f2 = filename(filename.First("_")+1,filename.Length());
     f2 = f2(0, f2.Length() - f2.First("_") - 2);
@@ -394,7 +404,7 @@ void BaconAnalysis(int maxFiles ){
     nDigi = oneEvent->time.size();
     time_a = oneEvent->time.at(0)*1.E6;
     time_b = oneEvent->time.at(nDigi- 1)*1.E6;
-    cout << "\t starting run " << filename << " set  " << runSet << " entries =  " << nentries 
+    cout << "\t *********  starting run " << filename << " set  " << runSet << " entries =  " << nentries 
       << " ndigi " << nDigi << " time_a " << time_a << " time_b " << time_b << endl;
     if (runSet != currentSet) {
       currentSet = runSet;
@@ -434,6 +444,10 @@ void BaconAnalysis(int maxFiles ){
       h_runqualityR = new TH1D(hname, hname, 200, 0, 100);
       hname.Form("runqualityB-%i", filenumber);
       h_runqualityB = new TH1D(hname, hname, 20, 0, 20);
+      TH1D *h_minimumRun = (TH1D *)h_minimum->Clone(Form("MinimumRun%i",currentRun) );
+      TH1D *h_maximumRun = (TH1D *)h_maximum->Clone(Form("MaximumRun%i",currentRun) );
+      waveDir->Append(h_minimumRun);
+      waveDir->Append(h_maximumRun);
       h_minimum->Reset("ICESM");
       h_maximum->Reset("ICESM");
       h_mean->Reset("ICESM");
@@ -490,12 +504,23 @@ void BaconAnalysis(int maxFiles ){
       }
       // start cuts
       int event_code = rejectEvent();
-      if (j % 1000 == 0){
+      std::string mystring;
+      if (j % 1000 == 0)
+      {
         printf("... %i hex code %X ", j, event_code);
-        std::string mystring =
-          rejectBits.to_string<char, std::string::traits_type, std::string::allocator_type>();
-          std::cout << "bits  " << mystring << '\n';
+        mystring = rejectBits.to_string<char, std::string::traits_type, std::string::allocator_type>();
+        std::cout << " bits  " << mystring << '\n';
       }
+      // save some reject examples
+      if (event_code > 0 && rejectSaved< 1)
+      {
+        mystring = rejectBits.to_string<char, std::string::traits_type, std::string::allocator_type>();
+        TH1D *hTemp = (TH1D *)h_v1->Clone(Form("run-%i-ev-%i-bits-%s",filenumber,j,mystring.c_str()));
+        rejectDir->Append(hTemp);
+        ++rejectSaved;
+        printf(" clone %s total %i \n", hTemp->GetName(), rejectSaved);
+      }
+
       float evPre[8];
       double vmaxPre = 0;
       double maxTimePre = getMaxTime(h_v1, singletEnd, vmaxPre);
@@ -550,46 +575,40 @@ void BaconAnalysis(int maxFiles ){
 
       }
 
-      // fix after pulsing
+      // align wavforms to time = 1000 ns and fix after pulsing
       afterFix(h_v1b, h_v1Fix);
       double vmax = 0;
       double maxTime = getMaxTime(h_v1Fix, singletEnd, vmax);
       // fill evvars
+      evVars[EVEVENT] = float(j);
       evVars[EVRUN] = filenumber;
       evVars[EVSET] = runSet;
       evVars[EVFLAG] = event_code;
-      evVars[EVSUM] = getSum(h_v1Fix, singletStart , double(nDigi));
-      evVars[EVSINGLET] = getSum(h_v1Fix, singletStart, singletEnd);
-      evVars[EVTRIPLET] = getSum(h_v1Fix, singletEnd , double(nDigi));
+      evVars[EVSUM] = getSum(h_v1Fix, singletStart*microToNano , double(nDigi));
+      evVars[EVSINGLET] = getSum(h_v1Fix, singletStart*microToNano, singletEnd*microToNano);
+      evVars[EVTRIPLET] = getSum(h_v1Fix, singletEnd*microToNano , double(nDigi));
       evVars[EVLATE] = vmax;
       evVars[EVLATETIME] = maxTime;
       evVars[EVWFSINGLET] = wf_singlet;
       evVars[EVWFMIN] = wf_min;
 
+      //printf(" ev %i run %i singlet %f triplet %f \n", int(evVars[EVEVENT]),int(evVars[EVRUN]), evVars[EVSINGLET] , evVars[EVTRIPLET]);
+      
       ntEvent->Fill(evVars);
 
-      if (-1.0*evVars[EVSINGLET]<singleCut[runSet])
+      if (evVars[EVSINGLET]<singleCut[runSet])
         continue;
 
-      /*
-      waveDir->cd();
-      TH1D *hFixCut = (TH1D *)h_v1Fix->Clone(Form("FixCutEv%iRun%i",j, filenumber));
-      fout->cd();
-      */
-
-      // shift trigger times
-      // align all the trigger times
-      int maxBin = h_v1Fix->GetMaximumBin();
-      int startBin = h_v1Fix->FindBin(1.0E3);
-      for (int k = 0; k < m; k++)
+      // sum waveforms by set
+      for (int jbin = 0; jbin < m; ++jbin)
       {
-        int jBin = k - maxBin + startBin;
-        hWave[currentSet]->SetBinContent(jBin, hWave[currentSet]->GetBinContent(jBin) + h_v1Fix->GetBinContent(k));
+        hWave[currentSet]->SetBinContent(jbin, hWave[currentSet]->GetBinContent(jbin) + h_v1Fix->GetBinContent(jbin));
       }
 
-        if (wf_singlet <= 15)
+      if (wf_singlet <= 15)
           h_runqualityB->Fill(6);
-        else
+      else
+
         {
           h_wf_integral->Fill(i, h_v1c->Integral());
           h_wf_max->Fill(i, h_v1b->GetMaximum());
@@ -659,11 +678,9 @@ void BaconAnalysis(int maxFiles ){
           //cin.get();
         }
 
-        
-
     } // end of event loop
 
-    
+    min_baseline=0;
     if(nrungood){
       h_mean->Scale(1.0/nrungood);  
       min_baseline=h_minimum->Integral(wf_width+1,900);
@@ -728,17 +745,23 @@ void BaconAnalysis(int maxFiles ){
     sumVars[EDOUBLET] = h_Dublet->GetBinContent(i);
     sumVars[ETRIPLET] = h_Triplet->GetBinContent(i);
     sumVars[ETOTAL] = h_Total->GetBinContent(i);
+    sumVars[NTOTAL] = ntotal;
     sumVars[NGOOD] = nrungood;
-    sumVars[OVERSHOOT] = h_minimum->Integral(1100,10000);
+    sumVars[OVERSHOOT] = h_minimum->Integral(1100, 10000);
+    sumVars[EMINBASE] = min_baseline;
     ntSummary->Fill(sumVars);
     f->Close();
+    //
     auto end = chrono::steady_clock::now();
-    cout << " \t finished " << filenumber << " after " << chrono::duration_cast<chrono::seconds>(end - start).count() << " sec events " << nentries << " good " << nrungood << endl;
+    cout << " \t finished " << filenumber << " after " 
+      << chrono::duration_cast<chrono::seconds>(end - start).count() 
+      << " sec events " << nentries << " good " 
+      << nrungood << endl;
 
     printf("\t  singlet %f doublet %f triplet %f \n ", sumVars[ESINGLET], sumVars[EDOUBLET], sumVars[ETRIPLET]);
 
     //if(i>10) break;
-  } // end file loop 
+  } // end file loop
 
   cout << " Total Files " << nFilesRead << endl;
   cout << " Total Events " << ntotal << endl;

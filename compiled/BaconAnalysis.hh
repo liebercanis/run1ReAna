@@ -1,6 +1,6 @@
 enum
 {
-    SUMVARS = 11
+    SUMVARS = 13
 };
 
 enum
@@ -14,17 +14,20 @@ enum
     ESINGLET,
     EDOUBLET,
     ETRIPLET,
+    NTOTAL,
     NGOOD,
-    OVERSHOOT
+    OVERSHOOT,
+    EMINBASE
 };
 
 enum
 {
-    EVVARS = 10
+    EVVARS = 11
 };
 
 enum
 {
+    EVEVENT,
     EVRUN,
     EVSET,
     EVFLAG,
@@ -34,12 +37,12 @@ enum
     EVLATE,
     EVLATETIME,
     EVWFSINGLET,
-    EVWFMIN,
+    EVWFMIN
 };
 static double singletStart = 0.99;
-static double singletEnd = 1.1;
+static double singletEnd = 1.02;
 static double afterLow = 1.30;
 static double afterHigh = 1.60; //1.60;
-static double afterLow2 = 1.80; //1.84;
-static double afterHigh2 = 2.2;
+static double afterLow2 = 1.88; //1.84;
+static double afterHigh2 = 2.1;
 //
