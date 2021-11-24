@@ -188,14 +188,20 @@ double afterPulsing(TH1D *h, int i1, int i2, int j)
 
 void afterFix(TH1D *h, TH1D* hFix ) {
   TH1D *hTemp  = (TH1D *) h->Clone(Form("h%s-temp",h->GetName()));
+<<<<<<< HEAD
   hTemp->SetDirectory(0);
+=======
+>>>>>>> ad97c1d945828312f4c52be34216249877ca6650
   // shift trigger times
   // align all the trigger times
   int maxBin = h->GetMaximumBin();
   int startBin = h->FindBin(1.0E3);
   for (int k = 0; k < h->GetNbinsX(); k++) {
     int jBin = k - maxBin + startBin;
+<<<<<<< HEAD
     // baseline subtraction
+=======
+>>>>>>> ad97c1d945828312f4c52be34216249877ca6650
     hTemp->SetBinContent(jBin, h->GetBinContent(k));
     hTemp->SetBinError(jBin, h->GetBinError(k));
   }
@@ -269,7 +275,14 @@ void BaconAnalysis(int maxFiles ){
   cout << "---" << files.size() << " files " << endl;
   sort (files.begin(), files.end());
   //shuffle(files.begin(), files.end(), gen); //random runs for testing
+<<<<<<< HEAD
   printf("--- from %s to %s  \n", files[0].Data(), files[files.size()-1].Data());
+=======
+  /*cout << " list of files to run " << endl;
+  for (unsigned j = 0; j < files.size(); ++j)
+    printf("\t %i %s \n", j, files[j].Data());
+    */
+>>>>>>> ad97c1d945828312f4c52be34216249877ca6650
   TString filename, f2;
   int filenumber;
   int nentries;
@@ -443,7 +456,11 @@ void BaconAnalysis(int maxFiles ){
       hname.Form("runqualityR-%i", filenumber);
       h_runqualityR = new TH1D(hname, hname, 200, 0, 100);
       hname.Form("runqualityB-%i", filenumber);
-      h_runqualityB = new TH1D(hname, hname, 20, 0, 20); 
+      h_runqualityB = new TH1D(hname, hname, 20, 0, 20);
+      TH1D *h_minimumRun = (TH1D *)h_minimum->Clone(Form("MinimumRun%i",currentRun) );
+      TH1D *h_maximumRun = (TH1D *)h_maximum->Clone(Form("MaximumRun%i",currentRun) );
+      waveDir->Append(h_minimumRun);
+      waveDir->Append(h_maximumRun);
       h_minimum->Reset("ICESM");
       h_maximum->Reset("ICESM");
       h_mean->Reset("ICESM");
@@ -759,6 +776,7 @@ void BaconAnalysis(int maxFiles ){
     TH1D *h_maximumRun = (TH1D *)h_maximum->Clone(Form("MaximumRun%i", currentRun));
     waveDir->Append(h_minimumRun);
     waveDir->Append(h_maximumRun);
+
     //if(i>10) break;
   } // end file loop
 

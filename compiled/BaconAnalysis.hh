@@ -15,6 +15,7 @@ enum
     ESINGLET,
     EDOUBLET,
     ETRIPLET,
+    NTOTAL,
     NGOOD,
     OVERSHOOT,
     EMINBASE
@@ -48,4 +49,5 @@ static double afterLow = 1.30;
 static double afterHigh = 1.60; //1.60;
 static double afterLow2 = 1.88; //1.84;
 static double afterHigh2 = 2.1;
+static double afterHigh2 = 2.2;
 //
