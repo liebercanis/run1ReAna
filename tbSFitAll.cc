@@ -121,12 +121,12 @@ public:
     };
     enum
     {
-        npars = 6 
+        npars = 6
     };
 
-    Float_t sumVars[SUMVARS];
     int setTotal[MAXSETS];
-    int setRuns[MAXSETS];
+    int setGood[MAXSETS];
+    double  setBase[MAXSETS];
 
 
     TF1 *setFit(int iset, TH1D *hLife, double ppm);
@@ -149,11 +149,13 @@ public:
     TString runRange[MAXSETS];
     TH1D *hMpvSet[MAXSETS];
     TH1D *hLifeSum[MAXSETS];
+    TH1D *hDispSum[MAXSETS];
+
     TH1D *hLifeInt[MAXSETS];
 
     TH1D *hLifeBlah[MAXSETS];
     TH1D *hMpvSum[MAXSETS];
-    int pcolor[MAXSETS];
+    TH1D *hBase[MAXSETS];
     int pstyle[MAXSETS];
     int setColor[MAXSETS];
     int setStyle[MAXSETS];
@@ -218,7 +220,6 @@ public:
 
 void tbSFitAll::writeHist(TH1D *h)
 {
-
     textFile << " hist " << h->GetName() << "  title " << h->GetTitle() << " y axis title " << h->GetYaxis()->GetTitle() << endl;
 
     for (int ibin = 0; ibin < h->GetNbinsX(); ++ibin)
@@ -238,10 +239,11 @@ double tbSFitAll::rangeIntegral(TH1D *h, double xlow, double xhigh)
 TCanvas *tbSFitAll::fhistCan(TString title, TH1D *h, TF1 *fp)
 {
     TCanvas *can = new TCanvas(title, title);
-    can->SetLogy();
-    gStyle->SetOptFit();
+    //can->SetLogy();
+    gStyle->SetOptFit(0011);
     //if(fp) fp->SetLineColor(kTeal-6);
     //h->GetYaxis()->SetRangeUser(1E-1,1E3);
+    h->GetXaxis()->SetRangeUser(.9,6);
     h->Draw();
     if (fp)
         fp->Draw("sames");
@@ -298,7 +300,8 @@ TF1 *tbSFitAll::setFit(int iset, TH1D *hLife, double ppm)
     fp->FixParameter(0, binwidth);
     fp->SetParameter(1, integral);
     fp->SetParameter(2, ppm);
-    fp->SetParameter(3, tTriplet);
+    fp->SetParLimits(2,0.,100.);
+    fp->FixParameter(3, tTriplet);
     fp->FixParameter(4, kplus);
     fp->FixParameter(5,ifit);
     fp->SetTitle(Form("LfFit-%i-%0.f-PPM", iset, ppm));
@@ -309,8 +312,8 @@ TF1 *tbSFitAll::setFit(int iset, TH1D *hLife, double ppm)
     printf(" correlation set %i cov(2,3) %f \n", iset, cov(2, 3));
     fptr->Print("V");
     fp->Print();
-    fp->SetLineColor(pcolor[iset]);
-    fp->SetMarkerStyle(pstyle[iset]);
+    fp->SetLineColor(setColor[iset]);
+    fp->SetMarkerStyle(setStyle[iset]);
 
     printf(" \n\n >>> setFit starting parameters \n");
     for (int ii = 0; ii < npars; ++ii)
@@ -325,11 +328,34 @@ TF1 *tbSFitAll::setFit(int iset, TH1D *hLife, double ppm)
 // MAIN 
 tbSFitAll::tbSFitAll(bool fix, double lifetime3)
 {
-    double markerSize = 0.5;
-    
+  
+  TString sumString = setSumNames();
+  printf("sumvars string %s \n", sumString.Data());
+
+
+
+
+  TString evNames[EVVARS];
+  evNames[0] = TString("ev");
+  evNames[1] = TString("run");
+  evNames[2] = TString("set");
+  evNames[3] = TString("flag");
+  evNames[4] = TString("sum");
+  evNames[5] = TString("singlet");
+  evNames[6] = TString("triplet");
+  evNames[7] = TString("late");
+  evNames[8] = TString("latetime");
+  evNames[9] = TString("wfsinglet");
+  evNames[10] = TString("wfmin");
+
+
+  double markerSize = 0.5;
+
+        
     for(int iset=0; iset<MAXSETS; ++iset) {
       hMpvSet[iset]=NULL;
       hLifeSum[iset]=NULL;
+      hDispSum[iset]=NULL;
       hLifeInt[iset]=NULL;
       hLifeBlah[iset]=NULL;
       hMpvSum[iset]=NULL;
@@ -343,9 +369,13 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
         fitTag = TString("floatTaut");
     cout << " fit Tag = " << fitTag << endl;
     fixTriplet = fix;
-    inFile = new TFile("BaconAnalysisHighCut-1000.root", "READONLY");
-    if (!inFile)
-        return;
+    TString inFileName("BaconAnalysisHighCut-1000.root");
+    inFile = new TFile(inFileName,"READONLY");
+    if (!inFile->IsOpen()) {
+      cout << " could not open " << inFileName << endl;  
+      return;
+    }
+    printf(" opening file %s \n",inFile->GetName());
     TFile *fout = new TFile("tbSFitOut.root", "RECREATE");
 
     runTag[0] = TString("00PPM-Ran");
@@ -377,32 +407,20 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
     tauGSet[3] = 3.004;
     tauGSet[4] = 3.004;
     tauGSet[5] = 3.140;
-    for (int iset = 0; iset < MAXSETS; ++iset)
+    for (int iset = 0; iset < MAXSETS; ++iset) {
         tauGSet[iset] = pmodtG;
-
-    for (int i = 0; i < MAXSETS; ++i)
-    {
-        pcolor[i] = i;
-        pstyle[i] = 20 + i;
-        setColor[i] = i + 1;
-        setStyle[i] = 20 + i;
+        setStyle[iset]=7;
     }
-    setStyle[4] = 3;
-    setStyle[5] = 29;
+
+    //setStyle[4] = 3;
+    //setStyle[5] = 29;
 
     setColor[0] = kOrange + 4;
     setColor[1] = kBlue;
     setColor[2] = kRed;
-    setColor[3] = kGreen - 2;
-    setColor[4] = kCyan - 2;
+    setColor[3] = kGreen;
+    setColor[4] = kCyan;
     setColor[5] = kMagenta + 1;
-
-    pcolor[5] = kBlack;
-    pcolor[4] = kBlue;
-    pcolor[3] = kYellow - 2;
-    pcolor[2] = kGreen;
-    pcolor[1] = kMagenta + 2;
-    pcolor[0] = kRed;
 
     TIter next(inFile->GetListOfKeys());
     TKey *key;
@@ -415,33 +433,27 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
             continue;
         TH1D *h = (TH1D *)key->ReadObj();
         TString hname(h->GetName());
-        cout << hname << endl;
-        if (hname.Contains("Wave-"))
+        //cout << hname << endl;
+        if (hname.Contains("Wave-")){
           hLifeBlah[iset3++] = h;
+          fout->Append(h);
+        }
     }
+
+    for (int iset = 0; iset < MAXSETS; ++iset) {
+      hBase[iset] = new TH1D(Form("Base-Set%i",iset),Form("Base-Set%i",iset),100,-0.1,0.);
+    }
+
 
     TTree* tSummary=NULL;
 
     inFile->GetObject("Summary",tSummary);
-    //TNtuple *ntSummary = new TNtuple("Summary", " Summary ", "run:set:base:baseend:accept:total:singlet:dublet:triplet:ngood");
-    TString sumNames[SUMVARS];
-    sumNames[0]=  TString("run");
-    sumNames[1]=  TString("set");
-    sumNames[2]=  TString("base");
-    sumNames[3]=  TString("baseend");
-    sumNames[4]=  TString("accept");
-    sumNames[5]=  TString("total");
-    sumNames[6]=  TString("singlet");
-    sumNames[7]=  TString("dublet");
-    sumNames[8]=  TString("triplet");
-    sumNames[9]=  TString("ngood");
-
-
     for(int iv=0; iv< SUMVARS; ++iv ) tSummary->SetBranchAddress(sumNames[iv],&sumVars[iv]);
 
     for(int iset=0; iset<MAXSETS; ++iset ) { 
       setTotal[iset]=0;
-      setRuns[iset]=0;
+      setGood[iset]=0;
+      setBase[iset]=0;
     }
 
 
@@ -449,20 +461,21 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
     if(tSummary) printf(" tSummary has  %lld  entries \n",tSummary->GetEntries());
     else printf(" no tSummary \n ");
 
-    // all entries and fill the histograms
+    // all entries sum events
     for (Long64_t jent=0;jent<tSummary->GetEntries() ;jent ++) {
       tSummary->GetEntry(jent);
-      //printf(" tSummary entry %lld \n ",jent);
-      for(int iv=0; iv< SUMVARS; ++iv ) {
-        int jset = int(sumVars[ESET]);
-        int nset = int(sumVars[NGOOD]);
-        setTotal[jset]+=  int(sumVars[NGOOD]);
-        ++setRuns[jset];
-        //printf(" \t %i %s %f \n",iv, sumNames[iv].Data(), sumVars[iv]); 
-      }
+      int jset = int(sumVars[ESET]);
+      setTotal[jset] +=  int(sumVars[NGOOD]);  // fix me
+      setGood[jset]  +=  int(sumVars[NGOOD]);
+      hBase[jset]->Fill( double (sumVars[EBASE]));
+      //printf(" ... set %i  runs %i good runs  %i  \n ", jset, setTotal[jset], setGood[jset] );
     }
 
-    for(int iset=0; iset<MAXSETS; ++iset ) printf(" set %i runs %i total events %i \n ", iset, setRuns[iset], setTotal[iset]);
+    printf(" set totals  \n");
+    for(int iset=0; iset<MAXSETS; ++iset ) {
+      setBase[iset] = hBase[iset]->GetMean();
+      printf(" set %i  runs %i good runs  %i base %f good*base  %f \n ", iset, setTotal[iset], setGood[iset], setBase[iset],  setGood[iset]*setBase[iset] );
+    }
 
 
 
@@ -470,12 +483,26 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
     if(iset3!= MAXSETS) return;
     printf(" nbins is  %i \n",hLifeBlah[0]->GetNbinsX());
 
+    double minVal[MAXSETS];
+    double theMin = 1E9;
+
+     for (int i = 0; i < MAXSETS; ++i) {
+       if(!hLifeBlah[i]) continue;
+       minVal[i] = hLifeBlah[i]->GetMinimum();
+       if(minVal[i] < theMin) theMin = minVal[i];
+     }
+     for (int i = 0; i < MAXSETS; ++i)  printf(" %s min %f \n",hLifeBlah[i]->GetName(), minVal[i] );
+
+
+
 
     for (int i = 0; i < MAXSETS; ++i)
     {
         hLifeSum[i] = (TH1D *)hLifeBlah[i]->Clone(Form("LifeToFitSet%i", i));
+        hDispSum[i] = (TH1D *)hLifeBlah[i]->Clone(Form("LifeToDisplaySet%i", i));
         hLifeInt[i] = (TH1D *)hLifeBlah[i]->Clone(Form("IntegralToFitSet%i", i));
         hLifeSum[i]->Reset();
+        hDispSum[i]->Reset();
         hLifeInt[i]->Reset();
         double yieldSum = 0;
         double yieldSumErr2 = 0;
@@ -491,12 +518,15 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
         {
           int jbin = ibin - maxBin+startBin;
           double val = hLifeBlah[i]->GetBinContent(ibin);
-          hLifeSum[i]->SetBinContent(jbin,val*normFact);
-          hLifeSum[i]->SetBinError(jbin, normFact*sqrt(val));
-          if(val>1) {
+          hLifeSum[i]->SetBinContent(jbin, val*normFact);
+          hLifeSum[i]->SetBinError(jbin, normFact*sqrt(abs(val)));
+          hDispSum[i]->SetBinContent(jbin, (val - setBase[i]*setGood[i])*normFact);
+          hDispSum[i]->SetBinError(jbin,  normFact*sqrt(abs(val)));
+
+          //if(val>1) {
             yieldSum += val;
             yieldSumErr2 += 1/val;
-          }
+          //}
           hLifeInt[i]->SetBinContent(jbin, yieldSum*normFact);
           hLifeInt[i]->SetBinError(jbin, normFact*sqrt(yieldSumErr2));
           //if(i==0&& val>1 ) printf(" bin %i val %f  sum %f err2 %f err %f \n",jbin,val,yieldSum,  yieldSumErr2 , sqrt(yieldSumErr2));
@@ -533,21 +563,30 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
     TCanvas *canLifeAll = new TCanvas("LifeALL", "LifeALL");
     canLifeAll->SetLogy();
     gStyle->SetOptStat(0);
-    hLifeSum[0]->Draw();
-    double yup = 1E6;
-    hLifeSum[0]->GetYaxis()->SetRangeUser(1E-1, yup);
-    hLifeSum[0]->SetTitle(Form("sets %i ",0));
-    for (int iset = 0; iset < MAXSETS; ++iset)
+    double yup = 20.0E6;
+    for (int iset = MAXSETS-2; iset >=0 ; --iset)
     {
-        hLifeSum[iset]->SetTitle(Form("sets %i ",iset));
-        hLifeSum[iset]->GetYaxis()->SetTitle("yield SPE/40 ns");
-        hLifeSum[iset]->GetYaxis()->SetRangeUser(1E-1, yup);
-        hLifeSum[iset]->Draw("sames");
-        hLifeSum[iset]->SetMarkerStyle(setStyle[iset]);
-        hLifeSum[iset]->SetMarkerColor(setColor[iset]);
-        hLifeSum[iset]->SetLineColor(setColor[iset]);
-        hLifeSum[iset]->SetMarkerSize(markerSize);
-        writeHist(hLifeSum[iset]);
+      hDispSum[iset]->GetXaxis()->SetRangeUser(.9,6);
+      hDispSum[iset]->GetYaxis()->SetRangeUser(1, yup);
+      hDispSum[iset]->SetName(Form("Set-%i",iset));
+      hDispSum[iset]->SetTitle("");
+      hDispSum[iset]->GetYaxis()->SetTitle("yield SPE/40 ns");
+      hDispSum[iset]->GetXaxis()->SetTitle("time (microseconds) ");
+      hDispSum[iset]->GetYaxis()->SetRangeUser(1, yup);
+      hDispSum[iset]->Draw("sames");
+      hDispSum[iset]->SetMarkerStyle(setStyle[iset]);
+      hDispSum[iset]->SetMarkerColor(setColor[iset]);
+      hDispSum[iset]->SetLineColor(setColor[iset]);
+      hDispSum[iset]->SetMarkerSize(markerSize);
+
+      hLifeSum[iset]->SetTitle(Form("sets %i ",iset));
+      hLifeSum[iset]->GetYaxis()->SetTitle("yield SPE/40 ns");
+      hLifeSum[iset]->SetMarkerStyle(setStyle[iset]);
+      hLifeSum[iset]->SetMarkerColor(setColor[iset]);
+      hLifeSum[iset]->SetLineColor(setColor[iset]);
+      hLifeSum[iset]->SetMarkerSize(markerSize);
+
+      writeHist(hLifeSum[iset]);
     }
     canLifeAll->BuildLegend();
     canLifeAll->Print(".png");
@@ -555,21 +594,26 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
     textFile.close();
 
     TCanvas *canIntAll = new TCanvas("IntALL", "IntALL");
+    canIntAll->SetGridx(); canIntAll->SetGridy();
+
     gStyle->SetOptStat(0);
-    yup = 5E6;
-    for (int iset = 0; iset < MAXSETS; ++iset)
+    yup = 4E6;
+    for (int iset = 0; iset < MAXSETS-1; ++iset)
     {
-      hLifeInt[iset]->SetTitle("SPE versus Time all sets ");
+      hLifeInt[iset]->SetTitle(Form("Set-%i",iset));
       hLifeInt[iset]->GetYaxis()->SetTitle("integral yield SPE/40 ns");
+      hLifeInt[iset]->GetXaxis()->SetTitle("time (microseconds)");
       hLifeInt[iset]->GetXaxis()->SetRangeUser(1, 4);
+      hLifeInt[iset]->SetLineWidth(2);
       hLifeInt[iset]->GetYaxis()->SetRangeUser(0,yup);
-      hLifeInt[iset]->SetMarkerStyle(setStyle[iset]);
+      hLifeInt[iset]->SetMarkerStyle(7);
       hLifeInt[iset]->SetMarkerColor(setColor[iset]);
       hLifeInt[iset]->SetLineColor(setColor[iset]);
       hLifeInt[iset]->SetMarkerSize(markerSize);
       if(iset==0) hLifeInt[iset]->Draw("");
       else  hLifeInt[iset]->Draw("sames");
     }
+    gPad->BuildLegend();
     canIntAll->Print(".png");
 
     for (int iset = 0; iset < MAXSETS; ++iset)
@@ -581,13 +625,15 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
     TGraphErrors *gTripletMu = new TGraphErrors(1,&vset[MAXSETS-1], &va0All[MAXSETS-1], &vsetErr[MAXSETS-1], &va0AllErr[MAXSETS-1]);
     TMultiGraph *mgTriplet = new TMultiGraph();
 
-    TCanvas *cTriplet0 = new TCanvas("Triplet0","Triplet0");
+    TCanvas *cTriplet0 = new TCanvas("Triplet-Fit-Value","Triplet-Fit-Value");
     cTriplet0->SetGridx(); cTriplet0->SetGridy();
-    gTriplet0->SetName("Triplet0-By-PPM");
-    gTriplet0->SetTitle("Triplet0-By-PPM");
+    gTriplet0->SetName("TripletFit");
+    gTriplet0->SetTitle("Triplet-Fit-By-PPM");
+    gTripletMu->SetTitle("Triplet-Fit-By-PPM-Mu");
     gTriplet0->SetMarkerColor(kRed);
     gTriplet0->SetMarkerStyle(22);
     gTriplet0->SetMarkerSize(1.4);
+    gTripletMu->SetName("TripletFitMu");
     gTripletMu->SetMarkerColor(kBlue);
     gTripletMu->SetMarkerStyle(21);
     gTripletMu->SetMarkerSize(1.4);
@@ -608,18 +654,24 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
 
     TCanvas *cFitPPM = new TCanvas("FitPPM","FitPPM");
     cFitPPM->SetGridx(); cFitPPM->SetGridy();
-    gPPM->SetName("FitPPM-By-PPM");
+    gPPM->SetName("FitPPM");
+    gPPMMu->SetName("FitPPMMu");
     gPPM->SetTitle("FitPPM-By-PPM");
+    gPPMMu->SetTitle("FitPPM-By-PPM-Mu");
     gPPM->SetMarkerColor(kRed);
     gPPM->SetMarkerStyle(22);
     gPPM->SetMarkerSize(1.4);
     gPPMMu->SetMarkerColor(kBlue);
-    gPPMMu->SetMarkerStyle(21);
+    gPPMMu->SetMarkerStyle(25);
     gPPMMu->SetMarkerSize(1.4);
     gPPM->GetHistogram()->GetXaxis()->SetTitle(" doped PPM");
-    gPPM->GetHistogram()->GetYaxis()->SetTitle(" fitted PPM");
+    gPPM->GetHistogram()->GetXaxis()->SetTitle(" doped PPM");
     mgppm->Add(gPPM,"p");
     mgppm->Add(gPPMMu,"p");
+    mgppm->SetTitle("Fitted PPM; Xe PPM dopant ; PPM fitted");
+    mgppm->Draw("a");
+    mgppm->GetYaxis()->SetRangeUser(0,12);
+    mgppm->GetXaxis()->SetRangeUser(0,12);
     mgppm->SetTitle("Fitted PPM; Xe PPM dopant ; PPM fitted");
     mgppm->Draw("a");
     cFitPPM->Print(".png");
@@ -634,8 +686,10 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
 
     TCanvas *cFittau3 = new TCanvas("Fittau3","Fittau3");
     cFittau3->SetGridx(); cFittau3->SetGridy();
-    gtau3->SetName("Fittau3-By-tau3");
+    gtau3->SetName("Fittau3");
+    gtau3Mu->SetName("Fittau3Mu");
     gtau3->SetTitle("Fittau3-By-tau3");
+    gtau3Mu->SetTitle("Fittau3-By-tau3-Mu");
     gtau3->SetMarkerColor(kRed);
     gtau3->SetMarkerStyle(22);
     gtau3->SetMarkerSize(1.4);
@@ -656,6 +710,13 @@ tbSFitAll::tbSFitAll(bool fix, double lifetime3)
       for(int j=0; j<npars; ++j) printf(" par[%i][%i] = %f ;\n",iset,j,fp[iset]->GetParameter(j));
     }
 
+    fout->Append(gTriplet0);
+    fout->Append(gTripletMu);
+    fout->Append(gtau3);
+    fout->Append(gtau3Mu);
+    fout->Append(gPPM);
+    fout->Append(gPPMMu);
+    //fout->ls();
     fout->Write();
 }
 
@@ -734,29 +795,29 @@ void tbSFitAll::tbFit1(int iset, TH1D *hLife)
     double lightAll = fp[iset]->Integral(singletEnd, xstop) / binwidth;
     printf(" set %i lightAll %.3E \n", iset, lightAll);
 
-    gStyle->SetOptFit(1111111);
+    gStyle->SetOptFit(11);
     gStyle->cd();
 
     canFit[iset] = new TCanvas(Form("LifeFit-%.f-PPM-%s", runPPM[iset], runTag[iset].Data()), Form("LifeFit-%.f-PPM-%s", runPPM[iset], runTag[iset].Data()));
     canFit[iset]->SetLogy();
+    hLife->GetXaxis()->SetRangeUser(.9,6);
     hLife->SetTitle(Form("LifeFit set %i Xe %s ", iset + 1, runTag[iset].Data()));
+    hLife->GetXaxis()->SetTitle("time (microseconds)");
     //hLife->GetYaxis()->SetRangeUser(1E-1,1E3);
     hLife->SetMarkerSize(0.5);
     hLife->SetLineColor(setColor[iset]);
     hLife->SetMarkerColor(setColor[iset]);
     hLife->Draw("p");
-    fp[iset]->SetLineColor(kTeal - 6);
+    fp[iset]->SetLineColor(kBlack);
     fp[iset]->SetLineStyle(5);
     fp[iset]->SetLineWidth(4);
     fp[iset]->Draw("sames");
     if(ftail) ftail->Draw("sames");
     TPaveStats *st = (TPaveStats *)hLife->GetListOfFunctions()->FindObject("stats");
-    gStyle->SetOptFit(); //for example
     canFit[iset]->Modified();
     canFit[iset]->Update();
-    canFit[iset]->Print(".png");
+    canFit[iset]->Print(".pdf");
 
-    gStyle->SetOptFit(1111111);
     gStyle->cd();
 
     double ArSum = fp[iset]->Integral(singletEnd, xstop);

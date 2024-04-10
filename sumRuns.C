@@ -1,7 +1,7 @@
 #include <fstream>
+#include <iostream>
 #include <numeric>
 #include "compiled/BaconAnalysis.hh"
-
 
 // time is in microseconds
 using namespace TMath;
@@ -24,6 +24,8 @@ TH1D* hModelWave[NSETS];
 TH1D* hSingletSetPass[NSETS];
 TH1D* hTripletSetPass[NSETS];
 TF1* LifeFit[NSETS];
+ofstream textFile;
+
 
 
 
@@ -74,62 +76,6 @@ TString cname;
 TCanvas *can;
 TNtuple *ntRun;
 
-
-void getParam(double par[NSETS][NPARS]){
-
-//........ fitted parameters set 0
- par[0][0] = 1.000000 ;
- par[0][1] = 119980.397087 ;
- //par[0][2] = -0.451276 ;
- par[0][2] = 0. ;
- par[0][3] = 2538.172504 ;
- par[0][4] = 0.000130 ;
- par[0][5] = 0.140000 ;
- par[0][6] = 3.000000 ;
-//........ fitted parameters set 1
- par[1][0] = 1.000000 ;
- par[1][1] = 225748.883783 ;
- par[1][2] = 3.804387 ;
- par[1][3] = 4072.803926 ;
- par[1][4] = 0.000130 ;
- par[1][5] = 0.140000 ;
- par[1][6] = 3.000000 ;
-//........ fitted parameters set 2
- par[2][0] = 1.000000 ;
- par[2][1] = 242531.322443 ;
- par[2][2] = 4.841292 ;
- par[2][3] = 4489.702524 ;
- par[2][4] = 0.000130 ;
- par[2][5] = 0.140000 ;
- par[2][6] = 3.000000 ;
-///........ fitted parameters set 3
- par[3][0] = 1.000000 ;
- par[3][1] = 250798.185081 ;
- par[3][2] = 7.142214 ;
- par[3][3] = 4448.561633 ;
- par[3][4] = 0.000130 ;
- par[3][5] = 0.140000 ;
- par[3][6] = 3.000000 ;
-//........ fitted parameters set 4
- par[4][0] = 1.000000 ;
- par[4][1] = 282960.706190 ;
- par[4][2] = 10.923587 ;
- par[4][3] = 4748.391581 ;
- par[4][4] = 0.000130 ;
- par[4][5] = 0.140000 ;
- par[4][6] = 3.000000 ;
-//........ fitted parameters set 5
- par[5][0] = 1.000000 ;
- par[5][1] = 288354.739170 ;
- par[5][2] = 10.573530 ;
- par[5][3] = 3798.823502 ;
- par[5][4] = 0.000130 ;
- par[5][5] = 0.140000 ;
- par[5][6] = 3.000000 ;
-
- return;
-
-}
 
 
 
@@ -195,20 +141,23 @@ void histNorm(int i)
   }
 
   waveNormed.push_back(hNorm);
-  fout->Append(hNorm);
+  //fout->Append(hNorm);
 
-  double singlet = hNorm->Integral(sStart,sEnd);
-  double triplet = hNorm->Integral(sEnd,tEnd);
-  double tripletRange = hNorm->Integral(tStart,tTripletCut);
+
+  double baseline =  hNorm->Integral(0.,900.,"width")/900.;
+  double singlet = hNorm->Integral(sStart,sEnd) - baseline*(sEnd-sStart);
+  double triplet = hNorm->Integral(sEnd,tEnd) - baseline*(tEnd-sEnd);
+  double tripletRange = hNorm->Integral(tStart,tTripletCut) - baseline*(tTripletCut-tStart);
   int set = getRunSet(fileNumber[i]);
   double cr = singlet/(singlet+triplet);
-  printf(" HISTNORM %i set %i file %i %s  events %i singlet %.3E triplet %.3E  cr %.3f \n", i,set, runList[i], hNorm->GetName(),  int(wevents), singlet, triplet,cr  );
+  printf(" HISTNORM %i set %i file %i %s  events %i singlet %.3E triplet %.3E  cr %.3f  baseline %.3E  \n",
+      i,set, runList[i], hNorm->GetName(),  int(wevents), singlet, triplet,cr , baseline );
   setNumber.push_back(   double(set)*25+ runsForSet[set].size() );
   runsForSet[set].push_back(i);
   singletSum.push_back(singlet);
   tripletSum.push_back(triplet);
   hSingletSet[set]->Fill(singlet);
-  hTripletSet[set]->Fill(triplet);
+  hTripletSet[set]->Fill(tripletRange);
   bool pass = singlet>singletSetCut[set]&& triplet>tripletSetCut[set];
 
   if(pass) hSingletSetPass[set]->Fill(singlet);
@@ -379,8 +328,20 @@ void getStats(std::vector<double> v,double& mean, double& stdev)
   stdev = std::sqrt(sq_sum / v.size());
 }
 
-void eventAna()
+void writeHist(TH1D *h)
 {
+    textFile << "hist " << h->GetName() << "  title " << h->GetTitle() << " y axis title " << h->GetYaxis()->GetTitle() << endl;
+
+    for (int ibin = 0; ibin < h->GetNbinsX(); ++ibin)
+        textFile << ibin << "  " << h->GetBinContent(ibin) << "  " << h->GetBinError(ibin) << endl;
+}
+
+
+
+void sumRuns()
+{
+
+
   runsForSet.resize(NSETS);
   for(int iset=0; iset<NSETS; ++iset) runsForSet[iset].clear();
 
@@ -436,10 +397,8 @@ void eventAna()
 
 
   double PPM[NSETS];
-  getParam(fitpar);
   for(int i=0; i<NSETS; ++i) PPM[i]= fitpar[i][2]; 
 
- 
 
   double singleCut[NSETS] = {4.,4.,4.,4.,4.,4.};
   for (int i = 0; i < NSETS; ++i)
@@ -462,7 +421,7 @@ void eventAna()
     printf(" \t set %i cut %.1f \n", iset, singleCut[iset]);
 
   
-  fout = new TFile("eventAna.root", "RECREATE");
+  fout = new TFile("sumRuns.root", "RECREATE");
 
   ntRun = new TNtuple("ntRun","run","run:set:pass:nev:singlet:triple:tRange");
 
@@ -537,11 +496,11 @@ void eventAna()
     {
       tSummary->GetEntry(jent);
       int jset = int(sumVars[ESET]);
-      setTotal[jset] += int(sumVars[NSETS]);
+      setTotal[jset] += int(sumVars[NTOTAL]);
       setGood[jset] += int(sumVars[NGOOD]);
       ++setRuns[jset];
       fileNumber.push_back(int(sumVars[ERUN]));
-      printf(" tSummary entry %lld  run %i set %i total %i good %i \n ",jent, int(sumVars[ERUN]), jset, int(sumVars[NSETS]), int(sumVars[NGOOD])  );
+      printf(" tSummary entry %lld  run %i set %i total %i good %i \n ",jent, int(sumVars[ERUN]), jset, int(sumVars[NTOTAL]), int(sumVars[NGOOD])  );
 
       //for(int iv=0; iv<SUMVARS; ++iv ) printf(" \t %i %s %f \n",iv, sumNames[iv].Data(), sumVars[iv]);
     }
@@ -785,6 +744,11 @@ void eventAna()
       }
     }
 
+    // write out waveforms
+    textFile.open("run1SummedWaves.txt");
+    for(int iset=0; iset<NSETS; ++iset)  writeHist(hWave[iset]);
+    textFile.close();
+
 
     // plot summed by set
     for(int iset=0; iset< NSETS-1; ++iset) {
@@ -814,203 +778,36 @@ void eventAna()
     can->Print(".pdf");
 
 
+    
     TMultiGraph *mgBeforeCuts = new TMultiGraph();
 
-    TGraph *gSinglet = new TGraphErrors(setNumber.size(), &setNumber[0], &singletSum[0]);
-    TGraph *gTriplet = new TGraphErrors(setNumber.size(), &setNumber[0], &tripletSum[0]);
-    TCanvas *cTripletBefore = new TCanvas("set-sums","set-sums");
+    TGraph *gSinglet = new TGraphErrors(setNumber.size()-3, &setNumber[0], &singletSum[0]);
+    TGraph *gTriplet = new TGraphErrors(setNumber.size()-3, &setNumber[0], &tripletSum[0]);
+    TCanvas *cTripletBefore = new TCanvas("set-sums-base","set-sums-base");
     cTripletBefore->SetGridx(); cTripletBefore->SetGridy();
     gSinglet->SetName("gSinglet");
-    gSinglet->SetTitle("fast");
+    gSinglet->SetTitle("singlet");
     gSinglet->SetMarkerColor(kRed);
     gSinglet->SetMarkerStyle(22);
     gSinglet->SetMarkerSize(.4);
     gSinglet->GetHistogram()->GetXaxis()->SetTitle("  set*20+sequential run");
-    gSinglet->GetHistogram()->GetYaxis()->SetTitle(" fast yield");
-
+    gSinglet->GetHistogram()->GetYaxis()->SetTitle(" singlet yield");
 
     gTriplet->SetName("gTriplet");
-    gTriplet->SetTitle("late");
+    gTriplet->SetTitle("triplet");
     gTriplet->SetMarkerColor(kBlack);
     gTriplet->SetMarkerStyle(21);
     gTriplet->SetMarkerSize(.4);
     gTriplet->GetHistogram()->GetXaxis()->SetTitle("  set*20+sequential run");
-    gTriplet->GetHistogram()->GetYaxis()->SetTitle(" late yield");
-
+    gTriplet->GetHistogram()->GetYaxis()->SetTitle(" triplet yield");
 
     mgBeforeCuts->Add(gTriplet);
     mgBeforeCuts->Add(gSinglet);
-    mgBeforeCuts->SetTitle("Light Yield; set*20+sequential run ; yield");
+    mgBeforeCuts->SetTitle("Light Yield; set*20+sequential run ; yield in range");
     mgBeforeCuts->Draw("ap");
     cTripletBefore->BuildLegend();
     cTripletBefore->Print(".pdf");
 
-    return;
 
-
-    // COMPARISON PLOT 
-    for(int iset=0; iset< NSETS; ++iset) {
-      singletPass[iset] = hSingletSetPass[iset]->GetMean();
-      singletPassErr[iset] =  hSingletSetPass[iset]->GetMeanError();
-      tripletPass[iset] = hTripletSetPass[iset]->GetMean();
-      tripletPassErr[iset] = hTripletSetPass[iset]->GetMeanError();
-      printf(" \t set %i singlet %f %f triplet %f %f \n",iset,singletPass[iset],singletPassErr[iset],tripletPass[iset],tripletPassErr[iset]);
-    }
-
-
-    //ratios
-    double smeanRatio[NSETS];
-    double srmsRatio[NSETS];
-    double tmeanRatio[NSETS];
-    double trmsRatio[NSETS];
-    for (unsigned iset = 0; iset < NSETS; ++iset)
-    {
-      ratioE(singletPass[iset],singletPassErr[iset], singletPass[0], singletPassErr[0], smeanRatio[iset], srmsRatio[iset]);
-      ratioE(tripletPass[iset], tripletPassErr[iset],singletPass[iset], singletPassErr[iset], tmeanRatio[iset], trmsRatio[iset]);
-      printf(" PASS set %u singlet %E(%E) ratio  %E(%E)  triplet %E(%E) ratio  %E(%E) \n", 
-          iset, singletPass[iset], singletPassErr[iset],smeanRatio[iset],srmsRatio[iset],
-          tripletPass[iset], tripletPassErr[iset],tmeanRatio[iset],trmsRatio[iset]);
-    }
-
-    fout->Append(gSinglet);
-    fout->Append(gTriplet);
-    fout->Write();
-
-
-    // add model norm model graphs 
-
-    TString modelFileName; modelFileName.Form("tbTFitOut.root");
-
-    cout<< modelFileName << endl;
-
-    getModelGraphs(modelFileName,"float");
-    if(!gModel[0])
-      return;
-
-    normModelGraphs(smeanRatio,srmsRatio);
-
-    // plot integral by set
-    for(int iset=0; iset< NSETS-1; ++iset) {
-      cname.Form("WaveForSet-%i",iset);
-      can = new TCanvas(cname,cname);
-      waveNormed[iset]->Draw("");
-      hModelWave[iset]->Draw("same");
-      can->BuildLegend();
-    }
-
-
-
-    /*
-    // model wave norm
-    for(int iset=0; iset<NSETS-1; ++iset) {
-      double wevents =  double(hWave[iset]->GetEntries())/double(hWave[iset]->GetNbinsX());
-      double xevents =  double(hModelWave[iset]->GetEntries())/double(hModelWave[iset]->GetNbinsX());
-      double histnorm = wevents/xevents;
-      printf(" ModelNorm wevents %E xevents %E norm %f \n",wevents,xevents, histnorm);
-      for(int ibin=0; ibin<hModelWave[iset]->GetNbinsX(); ++ibin) 
-        hModelWave[iset]->SetBinContent(ibin, hModelWave[iset]->GetBinContent(ibin)*histnorm );
-    }
-    */
-
-
-    // integral by set 
-
-    int i1 = hTripletIntegralSet[0]->FindBin(tStart);
-    int i2 = hTripletIntegralSet[0]->FindBin(tTripletCut);
-    for(int iset=0; iset<NSETS; ++iset) {
-      for (int ibin = i1; ibin < i2; ++ibin) {
-        hTripletIntegralSet[iset]->SetBinContent(ibin, hTripletIntegralSet[iset]->GetBinContent(ibin-1) + hWave[iset]->GetBinContent(ibin));
-      }
-    }
-
-    for(int iset=0; iset<NSETS-1; ++iset) {
-       hModelIntegral[iset] = (TH1D*)  hTripletIntegralSet[0]->Clone(Form("ModelIntegral-%i",iset));
-       hModelIntegral[iset]->SetLineStyle(2);
-       hModelIntegral[iset]->SetLineColor(setColor[iset]);
-      for (int ibin = i1; ibin < i2; ++ibin) {
-        hModelIntegral[iset]->SetBinContent(ibin, hModelIntegral[iset]->GetBinContent(ibin-1) + hModelWave[iset]->GetBinContent(ibin));
-      }
-    }
-
-
-
-    // plot integral by set
-    for(int iset=0; iset< NSETS-1; ++iset) {
-      cname.Form("WaveForSet-%i",iset);
-      can = new TCanvas(cname,cname);
-      hModelWave[iset]->GetYaxis()->SetRangeUser(4.0,1200.);
-      hModelWave[iset]->Draw("");
-      hModelWave[iset]->SetLineStyle(2);
-      waveNormed[iset]->Draw("same");
-      can->BuildLegend();
-    }
-
-
-
-    // plot integral by set
-    cname.Form("AllIntegrals");
-    can = new TCanvas(cname,cname);
-    hTripletIntegralSet[4]->Draw();
-    for(int iset=0; iset< NSETS-1; ++iset) {
-       hTripletIntegralSet[iset]->Draw("same");
-       hModelIntegral[iset]->Draw("same");
-    }
-    can->BuildLegend();
-
-
-
-
-    TMultiGraph *mgAfterCuts = new TMultiGraph();
-    TGraphErrors *gSingletPass = new TGraphErrors(NSETS-1, &PPM[0], &smeanRatio[0], &PPMError[0], &srmsRatio[0]);
-    TGraphErrors *gTripletPass = new TGraphErrors(NSETS-1, &PPM[0], &tmeanRatio[0], &PPMError[0], &trmsRatio[0]);
-
-    TCanvas *cTripletAfter = new TCanvas("set-sums-pass","set-sums-pass");
-    cTripletAfter->SetGridx(); cTripletAfter->SetGridy();
-    gSingletPass->SetName("singletPass");
-    gSingletPass->SetTitle("mean singlet pass");
-    gSingletPass->SetMarkerColor(kRed);
-    gSingletPass->SetMarkerStyle(22);
-    gSingletPass->SetMarkerSize(1.);
-    gSingletPass->GetHistogram()->GetXaxis()->SetTitle(" PPM ");
-    gSingletPass->GetHistogram()->GetYaxis()->SetTitle(" singlet yield");
-
-    gTripletPass->SetName("tripletPass");
-    gTripletPass->SetTitle("mean triplet pass");
-    gTripletPass->SetMarkerColor(kBlack);
-    gTripletPass->SetMarkerStyle(21);
-    gTripletPass->SetMarkerSize(1.);
-    gTripletPass->GetHistogram()->GetXaxis()->SetTitle("  PPM ");
-    gTripletPass->GetHistogram()->GetYaxis()->SetTitle(" triplet yield");
-
-
-    gModelNorm[0]->SetMarkerStyle(26);
-    gModelNorm[0]->SetMarkerColor(kRed);
-    gModelNorm[0]->SetMarkerSize(1.2);
-    gModelNorm[1]->SetMarkerStyle(25);
-    gModelNorm[1]->SetMarkerColor(kBlack);
-    gModelNorm[1]->SetMarkerSize(1.2);
-    gModelNorm[2]->SetMarkerStyle(29);
-    gModelNorm[2]->SetMarkerColor(kGreen);
-    gModelNorm[2]->SetMarkerSize(2.0);
-
-
-
-    TString gtitle;
-    gTitle.Form("Triplet Light Yield %.3f to %.3f ; Xe PPM dopant ; Yield ",tStart/microToNano,tTripletCut/microToNano);
-    mgAfterCuts->SetTitle(gTitle);
-
-    mgAfterCuts->Add(gSingletPass);
-    mgAfterCuts->Add(gTripletPass);
-    mgAfterCuts->Add(gModelNorm[0]);
-    mgAfterCuts->Add(gModelNorm[1]);
-    mgAfterCuts->Add(gModelNorm[2]);
-
-    mgAfterCuts->Draw("ap");
-    cTripletAfter->BuildLegend();
-    cTripletAfter->Print(".pdf");
-
-
-    fout->Append(gSingletPass);
-    fout->Append(gTripletPass);
     fout->Write();
 }

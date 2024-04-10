@@ -1,26 +1,26 @@
 // time is in microseconds
 #include "compiled/BaconAnalysis.hh"
 using namespace TMath;
-static double singletFraction = 0.14;
-static double tTriplet=2.100; 
-static double tSinglet=5.E-3;
-static double tXe = 20.0E-3;
-static double kxe = 8.8E-2;
-static double kplusZero  = 1.3E-1;
-static double xstart=1.;
-static double xstop=3.;
-static double tailStart=7.0;
-static double tailStop=10.0;
-static double pmodtG = 3.48;
-double k1Zero = kxe*131./40.;
+
+double aveEvents = 2607.841463;
 double binwidth = 0.04;
+enum
+{
+  NSETS = 5
+};
+double PPM[NSETS] = {0, 1, 2, 5, 10};
+int setColor[NSETS];
+enum
+{
+  npars = 6
+};
+TFile *fout;
+
 enum {MAXSETS=5};
 double PPM[MAXSETS]={0,1,2,5,10};
 int pcolor[MAXSETS] = {kRed,kMagenta+2,kGreen, kYellow-2,kBlue};
-enum {npars=6};
 TFile *fout;
-double par[6][6];
-
+double par[NSETS][npars+1];
 
 
 
@@ -51,6 +51,7 @@ static Double_t lightModel(Double_t *xx, Double_t *para)
   double kx = k1Zero*para[2];
   double tau3 = para[3];
   double kp = para[4];
+
   int type = int(para[5]);
   double td = 1/kx;
   double tq = 1./(1./tau3+kp);
@@ -80,7 +81,7 @@ TF1* setFit(int iset, double norm=1)
   double ppm=PPM[iset]; 
   double kplus = kplusZero;
 
-  TF1* fp  = new TF1(Form("LfFit-%i-%0.f-PPM", iset, ppm),lightModel,xstart,xstop,npars);
+  TF1* fp  = new TF1(Form("LfFit-%i-%0.f-PPM", iset, ppm),lightModel, sStart, tEnd, npars);
   fp->SetParName(0,"binw");
   fp->SetParName(1,"norm");
   fp->SetParName(2,"PPM");
@@ -110,42 +111,47 @@ TF1* setFit(int iset, double norm=1)
 
 void model()
 {
-  par[0][0] = 0.005000 ;
-  par[0][1] = 1010853.295568 ;
-  par[0][2] = 0.705848 ;
-  par[0][3] = 1.911888 ;
-  par[0][4] = 0.130000 ;
-  par[0][5] = 3.000000 ;
-  par[1][0] = 0.005000 ;
-  par[1][1] = 2556929.017753 ;
-  par[1][2] = 3.910191 ;
-  par[1][3] = 3.364905 ;
-  par[1][4] = 0.130000 ;
-  par[1][5] = 3.000000 ;
-  par[2][0] = 0.005000 ;
-  par[2][1] = 3075164.849148 ;
-  par[2][2] = 4.902713 ;
-  par[2][3] = 3.876612 ;
-  par[2][4] = 0.130000 ;
-  par[2][5] = 3.000000 ;
-  par[3][0] = 0.005000 ;
-  par[3][1] = 3229307.580083 ;
-  par[3][2] = 7.810860 ;
-  par[3][3] = 4.264110 ;
-  par[3][4] = 0.130000 ;
-  par[3][5] = 3.000000 ;
-  par[4][0] = 0.005000 ;
-  par[4][1] = 3673658.847956 ;
-  par[4][2] = 12.620146 ;
-  par[4][3] = 8.837865 ;
-  par[4][4] = 0.130000 ;
-  par[4][5] = 3.000000 ;
-  par[5][0] = 0.005000 ;
-  par[5][1] = 4764881.683593 ;
-  par[5][2] = 12.600111 ;
-  par[5][3] = 8.188048 ;
-  par[5][4] = 0.130000 ;
-  par[5][5] = 3.000000 ;
+  //........ fitted parameters set 0
+  par[0][0] = 1.000000 ;
+  par[0][1] = 106755.581074 ;
+  par[0][2] = -0.511235 ;
+  par[0][3] = 2100.000000 ;
+  par[0][4] = 0.000130 ;
+  par[0][5] = 0.140000 ;
+  par[0][6] = 3.000000 ;
+  //........ fitted parameters set 1
+  par[1][0] = 1.000000 ;
+  par[1][1] = 219597.924134 ;
+  par[1][2] = 3.342483 ;
+  par[1][3] = 2100.000000 ;
+  par[1][4] = 0.000130 ;
+  par[1][5] = 0.140000 ;
+  par[1][6] = 3.000000 ;
+  //........ fitted parameters set 2
+  par[2][0] = 1.000000 ;
+  par[2][1] = 244210.401667 ;
+  par[2][2] = 4.055385 ;
+  par[2][3] = 2100.000000 ;
+  par[2][4] = 0.000130 ;
+  par[2][5] = 0.140000 ;
+  par[2][6] = 3.000000 ;
+  //........ fitted parameters set 3
+  par[3][0] = 1.000000 ;
+  par[3][1] = 253277.558390 ;
+  par[3][2] = 6.250083 ;
+  par[3][3] = 2100.000000 ;
+  par[3][4] = 0.000130 ;
+  par[3][5] = 0.140000 ;
+  par[3][6] = 3.000000 ;
+  //........ fitted parameters set 4
+  par[4][0] = 1.000000 ;
+  par[4][1] = 283584.755090 ;
+  par[4][2] = 10.061776 ;
+  par[4][3] = 2100.000000 ;
+  par[4][4] = 0.000130 ;
+  par[4][5] = 0.140000 ;
+  par[4][6] = 3.000000 ;
+
 
   fout = new TFile("model.root","RECREATE");
   //if(iset>=MAXSETS) return;
