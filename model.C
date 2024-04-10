@@ -1,5 +1,5 @@
 // time is in microseconds
-#include "BaconAnalysis.hh"
+#include "compiled/BaconAnalysis.hh"
 using namespace TMath;
 static double singletFraction = 0.14;
 static double tTriplet=2.100; 

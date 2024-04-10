@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include "BaconAnalysis.hh"
+#include "compiled/BaconAnalysis.hh"
 // time is in microseconds
 using namespace TMath;
 static double singletFraction = 0.14;
